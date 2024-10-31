@@ -1,1 +1,2 @@
-A simple bytcode vm written in c.
+# Flying fish
+A simple programming language written in c.
