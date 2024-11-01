@@ -17,9 +17,11 @@ typedef enum {
     Bang, And, Or,
     // other (17 - 20)
     Comma, Point, Semicolon, Equal,
-    // Variables (21 - 26)
-    Identifier, Int, Float, Char, String, Bool,
-    // keywoards (27 - 32)
+    // variables (21 - 26)
+    Identifier, IntV, FloatV, CharV, StringV, BoolV,
+    // types (27 - 31)
+    IntT, FloatT, CharT, StringT, BoolT,
+    // keywoards (32 - 37)
     If, Else, Func, For, Return, While,
 } TokenType_t;
 
@@ -33,7 +35,8 @@ typedef union {
 
 typedef struct {
     TokenType_t type;
+    size_t line;
     Literal_t* literal;
 } Token_t;
 
-Token_t new_token(TokenType_t type, Literal_t* literal);
+Token_t new_token(TokenType_t type, size_t line, Literal_t* literal);

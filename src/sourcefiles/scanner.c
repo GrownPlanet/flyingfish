@@ -4,50 +4,57 @@
 #include <string.h>
 
 #include "array_utils.h"
+#include "error.h"
 #include "scanner.h"
 
 char peek_char(char* input, size_t input_len, size_t index);
 void push_token(Token_t** tokens, size_t* t_capacity, size_t* t_len, Token_t token);
 
-Token_t keywoard_to_token(char* identifier);
+Token_t keyword_to_token(char* identifier, size_t line);
 
-char* extract_identifier(char* input, size_t input_len, size_t* index);
-char* extract_num(char* input, size_t input_len, size_t* index, bool* is_float);
-char* extract_string(char* input, size_t input_len, size_t* index);
+char* extract_identifier(char* input, size_t input_len, size_t* index, size_t line);
+char* extract_num(char* input, size_t input_len, size_t* index, bool* is_float, size_t line);
+char* extract_string(char* input, size_t input_len, size_t* index, size_t line);
 
 ScanResult_t scan(char* input, size_t input_len) {
     Token_t* tokens = (Token_t*)malloc(sizeof(Token_t));
+
+    ScanResult_t fail_result = {
+        NULL, 0
+    };
+
     if (tokens == NULL) {
-        printf("malloc failed!\n");
-        exit(1);
+        report_error("malloc failed", 0);
+        return fail_result;
     }
 
     size_t t_capacity = 1;
     size_t t_len = 0;
+    size_t line = 0;
 
     for (size_t i = 0; i < input_len; i++) {
         char ch = input[i];
         switch (ch) {
             case '(':
-                push_token(&tokens, &t_len, &t_capacity, new_token(LeftParen, NULL));
+                push_token(&tokens, &t_len, &t_capacity, new_token(LeftParen, line, NULL));
                 break;
             case ')':
-                push_token(&tokens, &t_len, &t_capacity, new_token(RightParen, NULL));
+                push_token(&tokens, &t_len, &t_capacity, new_token(RightParen, line, NULL));
                 break;
             case '{':
-                push_token(&tokens, &t_len, &t_capacity, new_token(LeftBrace, NULL));
+                push_token(&tokens, &t_len, &t_capacity, new_token(LeftBrace, line, NULL));
                 break;
             case '}':
-                push_token(&tokens, &t_len, &t_capacity, new_token(RightBrace, NULL));
+                push_token(&tokens, &t_len, &t_capacity, new_token(RightBrace, line, NULL));
                 break;
             case '+':
-                push_token(&tokens, &t_len, &t_capacity, new_token(Plus, NULL));
+                push_token(&tokens, &t_len, &t_capacity, new_token(Plus, line, NULL));
                 break;
             case '-':
-                push_token(&tokens, &t_len, &t_capacity, new_token(Minus, NULL));
+                push_token(&tokens, &t_len, &t_capacity, new_token(Minus, line, NULL));
                 break;
             case '*':
-                push_token(&tokens, &t_len, &t_capacity, new_token(Star, NULL));
+                push_token(&tokens, &t_len, &t_capacity, new_token(Star, line, NULL));
                 break;
             case '/':
                 if (peek_char(input, input_len, i) == '/') {
@@ -55,80 +62,82 @@ ScanResult_t scan(char* input, size_t input_len) {
                         i++;
                     }
                 } else {
-                    push_token(&tokens, &t_len, &t_capacity, new_token(Slash, NULL));
+                    push_token(&tokens, &t_len, &t_capacity, new_token(Slash, line, NULL));
                 }
                 break;
             case '=':
                 if (peek_char(input, input_len, i) == '=') {
-                    push_token(&tokens, &t_len, &t_capacity, new_token(EqualEqual, NULL));
+                    push_token(&tokens, &t_len, &t_capacity, new_token(EqualEqual, line, NULL));
                     i++;
                 } else {
-                    push_token(&tokens, &t_len, &t_capacity, new_token(Equal, NULL));
+                    push_token(&tokens, &t_len, &t_capacity, new_token(Equal, line, NULL));
                 }
                 break;
             case '>':
                 if (peek_char(input, input_len, i) == '=') {
-                    push_token(&tokens, &t_len, &t_capacity, new_token(GreaterEqual, NULL));
+                    push_token(&tokens, &t_len, &t_capacity, new_token(GreaterEqual, line, NULL));
                     i++;
                 } else {
-                    push_token(&tokens, &t_len, &t_capacity, new_token(Greater, NULL));
+                    push_token(&tokens, &t_len, &t_capacity, new_token(Greater, line, NULL));
                 }
                 break;
             case '<':
                 if (peek_char(input, input_len, i) == '=') {
-                    push_token(&tokens, &t_len, &t_capacity, new_token(LesserEqual, NULL));
+                    push_token(&tokens, &t_len, &t_capacity, new_token(LesserEqual, line, NULL));
                     i++;
                 } else {
-                    push_token(&tokens, &t_len, &t_capacity, new_token(Lesser, NULL));
+                    push_token(&tokens, &t_len, &t_capacity, new_token(Lesser, line, NULL));
                 }
                 break;
             case '&':
-                push_token(&tokens, &t_len, &t_capacity, new_token(Bang, NULL));
+                push_token(&tokens, &t_len, &t_capacity, new_token(Bang, line, NULL));
                 break;
             case '|':
-                push_token(&tokens, &t_len, &t_capacity, new_token(Or, NULL));
+                push_token(&tokens, &t_len, &t_capacity, new_token(Or, line, NULL));
                 break;
             case ',':
-                push_token(&tokens, &t_len, &t_capacity, new_token(Comma, NULL));
+                push_token(&tokens, &t_len, &t_capacity, new_token(Comma, line, NULL));
                 break;
             case '.':
-                push_token(&tokens, &t_len, &t_capacity, new_token(Point, NULL));
+                push_token(&tokens, &t_len, &t_capacity, new_token(Point, line, NULL));
                 break;
             case ';':
-                push_token(&tokens, &t_len, &t_capacity, new_token(Semicolon, NULL));
+                push_token(&tokens, &t_len, &t_capacity, new_token(Semicolon, line, NULL));
                 break;
             case '"': {
-                char* str = extract_string(input, input_len, &i);
+                char* str = extract_string(input, input_len, &i, line);
                 Literal_t* lit = (Literal_t*)malloc(sizeof(Literal_t));
                 if (lit == NULL) {
-                    printf("malloc failed!\n");
-                    exit(1);
+                    report_error("malloc failed", line);
+                    return fail_result;
                 }
 
                 lit->str = str;
-                push_token(&tokens, &t_len, &t_capacity, new_token(String, lit));
+                push_token(&tokens, &t_len, &t_capacity, new_token(StringV, line, lit));
                 break;
             }
             case '\'': {
                 i++;
                 Literal_t* lit = (Literal_t*)malloc(sizeof(Literal_t));
                 if (lit == NULL) {
-                    printf("malloc failed!\n");
-                    exit(1);
+                    report_error("malloc failed", line);
+                    return fail_result;
                 }
 
                 lit->ch = input[i];
-                push_token(&tokens, &t_len, &t_capacity, new_token(Char, lit));
+                push_token(&tokens, &t_len, &t_capacity, new_token(CharV, line, lit));
 
                 i++;
                 if (input[i] != '\'') {
-                    printf("expected `'` after char!\n");
-                    exit(1);
+                    report_error("expected `'` after char", line);
+                    i--;
                 }
 
                 break;
             }
             case '\n':
+                line++;
+                break;
             case '\r':
             case ' ':
                 break;
@@ -136,21 +145,21 @@ ScanResult_t scan(char* input, size_t input_len) {
                 // check if c is numeric
                 if ('0' <= ch && ch <= '9') {
                     bool is_float = false;
-                    char* num_str = extract_num(input, input_len, &i, &is_float);
+                    char* num_str = extract_num(input, input_len, &i, &is_float, line);
 
                     Literal_t* lit = (Literal_t*)malloc(sizeof(Literal_t));
                     if (lit == NULL) {
-                        printf("malloc failed!\n");
-                        exit(1);
+                        report_error("malloc failed", line);
+                        return fail_result;
                     }
 
                     if (is_float) {
                         lit->db = strtod(num_str, NULL);
-                        push_token(&tokens, &t_len, &t_capacity, new_token(Float, lit));
+                        push_token(&tokens, &t_len, &t_capacity, new_token(FloatV, line, lit));
                     } 
                     else {
                         lit->ln = atol(num_str);
-                        push_token(&tokens, &t_len, &t_capacity, new_token(Int, lit));
+                        push_token(&tokens, &t_len, &t_capacity, new_token(IntV, line, lit));
                     }
 
                     i--;
@@ -160,15 +169,15 @@ ScanResult_t scan(char* input, size_t input_len) {
 
                 // check if c is is alphabetic
                 if (('A' <= ch && ch <= 'Z') || ('a' <= ch && ch <= 'z')) {
-                    char* identifier = extract_identifier(input, input_len, &i);
-                    push_token(&tokens, &t_len, &t_capacity, keywoard_to_token(identifier));
+                    char* identifier = extract_identifier(input, input_len, &i, line);
+                    push_token(&tokens, &t_len, &t_capacity, keyword_to_token(identifier, line));
 
                     i--;
 
                     break;
                 }
 
-                push_token(&tokens, &t_len, &t_capacity, new_token(-1, NULL));
+                report_error("unexpected character", line);
                 break;
         }
     }
@@ -192,7 +201,7 @@ void push_token(Token_t** tokens, size_t* t_len, size_t* t_capacity, Token_t tok
     push((void**)tokens, t_len, t_capacity, sizeof(token), &token);
 }
 
-Token_t keywoard_to_token(char* identifier) {
+Token_t keyword_to_token(char* identifier, size_t line) {
     char* keys[] = {
         "if",
         "else",
@@ -200,6 +209,11 @@ Token_t keywoard_to_token(char* identifier) {
         "for",
         "return",
         "while",
+        "int", 
+        "float", 
+        "char", 
+        "string", 
+        "bool",
     };
 
     TokenType_t values[] = {
@@ -209,41 +223,46 @@ Token_t keywoard_to_token(char* identifier) {
         For,
         Return,
         While,
+        IntT, 
+        FloatT, 
+        CharT, 
+        StringT, 
+        BoolT,
     };
     
     size_t len = sizeof(keys) / sizeof(char*);
 
-    for (size_t i = 0; i < len; i++) {
+    for (size_t i = 0;i < len; i++) {
         if (strcmp(identifier, keys[i]) == 0) {
-            return new_token(values[i], NULL);
+            return new_token(values[i], line, NULL);
         }
     }
 
     Literal_t* lit = (Literal_t*)malloc(sizeof(Literal_t));
     if (lit == NULL) {
-        printf("malloc failed!\n");
-        exit(1);
+        report_error("malloc failed", line);
+        return new_token(Identifier, line, NULL);
     }
 
     if (strcmp(identifier, "true") == 0) {
         lit->b = true;
-        return new_token(Bool, lit);
+        return new_token(BoolV, line, lit);
     }
 
     if (strcmp(identifier, "false") == 0) {
         lit->b = false;
-        return new_token(Bool, lit);
+        return new_token(BoolV, line, lit);
     }
 
     lit->str = identifier;
-    return new_token(Identifier, lit);
+    return new_token(Identifier, line, lit);
 }
 
-char* extract_identifier(char* input, size_t input_len, size_t* index) {
+char* extract_identifier(char* input, size_t input_len, size_t* index, size_t line) {
     char* ident = (char*)malloc(1 * sizeof(char));
     if (ident == NULL) {
-        printf("malloc failed!\n");
-        exit(1);
+        report_error("malloc failed", line);
+        return "";
     }
 
     size_t i_capacity = 1;
@@ -268,11 +287,11 @@ char* extract_identifier(char* input, size_t input_len, size_t* index) {
     return ident;
 }
 
-char* extract_num(char* input, size_t input_len, size_t* index, bool* is_float) {
+char* extract_num(char* input, size_t input_len, size_t* index, bool* is_float, size_t line) {
     char* num = (char*)malloc(1 * sizeof(char));
     if (num == NULL) {
-        printf("malloc failed!\n");
-        exit(1);
+        report_error("malloc failed", line);
+        return "";
     }
 
     size_t n_capacity = 1;
@@ -308,13 +327,13 @@ char* extract_num(char* input, size_t input_len, size_t* index, bool* is_float) 
     return num;
 }
 
-char* extract_string(char* input, size_t input_len, size_t* index) {
+char* extract_string(char* input, size_t input_len, size_t* index, size_t line) {
     (*index)++;
 
     char* str = (char*)malloc(1 * sizeof(char));
     if (str == NULL) {
-        printf("malloc failed!\n");
-        exit(1);
+        report_error("malloc failed", line);
+        return "";
     }
 
     size_t s_capacity = 1;
@@ -324,8 +343,8 @@ char* extract_string(char* input, size_t input_len, size_t* index) {
         push((void**)&str, &s_len, &s_capacity, sizeof(char), &input[*index]);
         (*index)++;
         if (*index >= input_len) {
-            printf("Expected `\"` after string!\n");
-            exit(1);
+            report_error("expected `\"` after string", line);
+            return "";
         }
     }
 

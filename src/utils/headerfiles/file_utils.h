@@ -10,4 +10,4 @@
 #include <stdlib.h>
 #include <string.h>
 
-char* read_to_string(char* filename);
+char* read_file_to_string(char* filename);

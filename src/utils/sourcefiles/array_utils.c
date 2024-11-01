@@ -19,4 +19,3 @@ void push(void** arr, size_t* len, size_t* capacity, size_t elem_size, const voi
     memcpy((char*)*arr + (*len * elem_size), elem, elem_size);
     (*len)++;
 }
-
