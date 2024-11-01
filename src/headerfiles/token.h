@@ -6,25 +6,29 @@
 
 #pragma once
 
+#include <stdbool.h>
+
 typedef enum {
-    // parens, braces
+    // parens, braces (0 - 3)
     LeftParen, RightParen, LeftBrace, RightBrace, 
-    // (primarely) math
+    // (primarely) math (4 - 13)
     Minus, Plus, Slash, Star, EqualEqual, Greater, GreaterEqual, Lesser, LesserEqual, BangEqual, 
-    // boolean
+    // boolean (14 - 16)
     Bang, And, Or,
-    // other
+    // other (17 - 20)
     Comma, Point, Semicolon, Equal,
-    // Variables
+    // Variables (21 - 26)
     Identifier, Int, Float, Char, String, Bool,
-    // keywoards
+    // keywoards (27 - 32)
     If, Else, Func, For, Return, While,
 } TokenType_t;
 
 typedef union {
-    float fl;
-    int in;
+    double db;
+    long ln;
     char* str;
+    char ch;
+    bool b;
 } Literal_t;
 
 typedef struct {

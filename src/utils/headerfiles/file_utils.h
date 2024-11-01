@@ -1,3 +1,9 @@
+/*
+ * File utils
+ *
+ * Simple opperations for files
+ */
+
 #pragma once
 
 #include <stdio.h>

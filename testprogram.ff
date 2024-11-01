@@ -1,0 +1,14 @@
+func main() {
+    int abc = 1;
+
+    if (abc == 2) {
+        print("2");
+    }
+    else if (abc > 2) {
+        print("greater than 2");
+    }
+    else {
+        print("lesser than 2");
+    }
+}
+
