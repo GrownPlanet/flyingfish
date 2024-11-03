@@ -1,3 +1,7 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include "file_utils.h"
 
 char* read_file_to_string(char* filename) {

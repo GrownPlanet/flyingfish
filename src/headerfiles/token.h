@@ -1,28 +1,34 @@
 /*
  * Token
  *
- * All tokens needed for the programming language
+ * All tokens needed for the programming language.
+ *
  * */
 
-#pragma once
+#ifndef TOKEN_H
+#define TOKEN_H
 
 #include <stdbool.h>
+#include <stdlib.h>
 
 typedef enum {
     // parens, braces (0 - 3)
-    LeftParen, RightParen, LeftBrace, RightBrace, 
+    TokenType_LeftParen, TokenType_RightParen, TokenType_LeftBrace, TokenType_RightBrace, 
     // (primarely) math (4 - 13)
-    Minus, Plus, Slash, Star, EqualEqual, Greater, GreaterEqual, Lesser, LesserEqual, BangEqual, 
+    TokenType_Minus, TokenType_Plus, TokenType_Slash, TokenType_Star, TokenType_EqualEqual,
+    TokenType_Greater, TokenType_GreaterEqual, TokenType_Lesser, TokenType_LesserEqual, 
+    TokenType_BangEqual, 
     // boolean (14 - 16)
-    Bang, And, Or,
+    TokenType_Bang, TokenType_And, TokenType_Or,
     // other (17 - 20)
-    Comma, Point, Semicolon, Equal,
+    TokenType_Comma, TokenType_Point, TokenType_Semicolon, TokenType_Equal,
     // variables (21 - 26)
-    Identifier, IntV, FloatV, CharV, StringV, BoolV,
+    TokenType_Identifier, TokenType_IntV, TokenType_FloatV, TokenType_CharV, TokenType_StringV,
+    TokenType_BoolV,
     // types (27 - 31)
-    IntT, FloatT, CharT, StringT, BoolT,
+    TokenType_IntT, TokenType_FloatT, TokenType_CharT, TokenType_StringT, TokenType_BoolT,
     // keywoards (32 - 37)
-    If, Else, Func, For, Return, While,
+    TokenType_If, TokenType_Else, TokenType_Func, TokenType_For, TokenType_Return, TokenType_While,
 } TokenType_t;
 
 typedef union {
@@ -40,3 +46,5 @@ typedef struct {
 } Token_t;
 
 Token_t new_token(TokenType_t type, size_t line, Literal_t* literal);
+
+#endif // TOKEN_H

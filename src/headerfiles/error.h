@@ -1,4 +1,12 @@
-#pragma once
+/*
+ * Error
+ *
+ * Handels errors the program may produce.
+ *
+ */
+
+#ifndef ERROR_H
+#define ERROR_H
 
 #include <stdlib.h>
 
@@ -16,3 +24,5 @@ void report_error(char* message, size_t line);
 bool had_error();
 void print_errors();
 void free_error();
+
+#endif // ERROR_H

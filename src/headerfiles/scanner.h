@@ -5,7 +5,8 @@
  *
  * */
 
-#pragma once
+#ifndef SCANNER_H
+#define SCANNER_H
 
 #include "token.h"
 
@@ -15,3 +16,5 @@ typedef struct {
 } ScanResult_t;
 
 ScanResult_t scan(char* input, size_t input_len);
+
+#endif // SCANNER_H

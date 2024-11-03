@@ -1,12 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
+#include "expression.h"
 #include "file_utils.h"
 #include "scanner.h"
 #include "token.h"
 #include "error.h"
-
-void print_token(TokenType_t token);
 
 int main(int argc, char* argv[]) {
     if (argc != 2) {
@@ -34,20 +34,20 @@ int main(int argc, char* argv[]) {
         Token_t token = tokens.tokens[i];
         printf("%d: ", token.type);
         switch (token.type) {
-            case IntV:
+            case TokenType_IntV:
                 printf("%ld", token.literal->ln);
                 break;
-            case FloatV:
+            case TokenType_FloatV:
                 printf("%f", token.literal->db);
                 break;
-            case Identifier:
-            case StringV:
+            case TokenType_Identifier:
+            case TokenType_StringV:
                 printf("\"%s\"", token.literal->str);
                 break;
-            case CharV:
+            case TokenType_CharV:
                 printf("'%c'", token.literal->ch);
                 break;
-            case BoolV:
+            case TokenType_BoolV:
                 printf("%s", token.literal->b ? "true" : "false");
                 break;
             default:
@@ -62,13 +62,16 @@ int main(int argc, char* argv[]) {
     printf("\n");
 
     // freeing data
+    free(file);
     free_error();
     for (size_t i = 0; i < tokens.len; i++) {
         Token_t token = tokens.tokens[i];
-        if (token.type == StringV || token.type == Identifier) {
+        if (token.type == TokenType_StringV || token.type == TokenType_Identifier) {
             free(token.literal->str);
         }
+        free(token.literal);
     }
+    free(tokens.tokens);
 
     return 0;
 }

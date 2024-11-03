@@ -1,0 +1,50 @@
+/*
+ * Expression
+ *
+ * A collection of values and other expressions that can be parsed to a single value.
+ *
+ */
+
+#ifndef EXPRESSION_H
+#define EXPRESSION_H
+
+#include "token.h"
+
+typedef struct EV_Binary_t EV_Binary_t;
+typedef struct EV_Unary_t EV_Unary_t;
+typedef struct EV_Literal_t EV_Literal_t;
+
+typedef enum {
+    Binary,
+    Unary,
+    Literal,
+} ExpressionType_t;
+
+typedef union {
+    EV_Binary_t* binary;
+    EV_Unary_t* unary;
+    EV_Literal_t* literal;
+} ExpressionValue_t;
+
+typedef struct {
+    ExpressionType_t type;
+    ExpressionValue_t value;
+} Expression_t;
+
+struct EV_Binary_t {
+    Expression_t left;
+    Token_t Operator;
+    Expression_t rigth;
+};
+
+struct EV_Unary_t {
+    Token_t Operator;
+    Expression_t value;
+};
+
+struct EV_Literl_t {
+    Token_t type;
+    Literal_t value;
+};
+
+#endif // EXPRESSION_H

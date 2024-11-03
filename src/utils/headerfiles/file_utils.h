@@ -1,13 +1,13 @@
 /*
  * File utils
  *
- * Simple opperations for files
+ * Simple opperations for files.
+ *
  */
 
-#pragma once
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#ifndef FILE_UTILS_H
+#define FILE_UTILS_H
 
 char* read_file_to_string(char* filename);
+
+#endif // FILE_UTILS_H

@@ -36,25 +36,25 @@ ScanResult_t scan(char* input, size_t input_len) {
         char ch = input[i];
         switch (ch) {
             case '(':
-                push_token(&tokens, &t_len, &t_capacity, new_token(LeftParen, line, NULL));
+                push_token(&tokens, &t_len, &t_capacity, new_token(TokenType_LeftParen, line, NULL));
                 break;
             case ')':
-                push_token(&tokens, &t_len, &t_capacity, new_token(RightParen, line, NULL));
+                push_token(&tokens, &t_len, &t_capacity, new_token(TokenType_RightParen, line, NULL));
                 break;
             case '{':
-                push_token(&tokens, &t_len, &t_capacity, new_token(LeftBrace, line, NULL));
+                push_token(&tokens, &t_len, &t_capacity, new_token(TokenType_LeftBrace, line, NULL));
                 break;
             case '}':
-                push_token(&tokens, &t_len, &t_capacity, new_token(RightBrace, line, NULL));
+                push_token(&tokens, &t_len, &t_capacity, new_token(TokenType_RightBrace, line, NULL));
                 break;
             case '+':
-                push_token(&tokens, &t_len, &t_capacity, new_token(Plus, line, NULL));
+                push_token(&tokens, &t_len, &t_capacity, new_token(TokenType_Plus, line, NULL));
                 break;
             case '-':
-                push_token(&tokens, &t_len, &t_capacity, new_token(Minus, line, NULL));
+                push_token(&tokens, &t_len, &t_capacity, new_token(TokenType_Minus, line, NULL));
                 break;
             case '*':
-                push_token(&tokens, &t_len, &t_capacity, new_token(Star, line, NULL));
+                push_token(&tokens, &t_len, &t_capacity, new_token(TokenType_Star, line, NULL));
                 break;
             case '/':
                 if (peek_char(input, input_len, i) == '/') {
@@ -62,47 +62,47 @@ ScanResult_t scan(char* input, size_t input_len) {
                         i++;
                     }
                 } else {
-                    push_token(&tokens, &t_len, &t_capacity, new_token(Slash, line, NULL));
+                    push_token(&tokens, &t_len, &t_capacity, new_token(TokenType_Slash, line, NULL));
                 }
                 break;
             case '=':
                 if (peek_char(input, input_len, i) == '=') {
-                    push_token(&tokens, &t_len, &t_capacity, new_token(EqualEqual, line, NULL));
+                    push_token(&tokens, &t_len, &t_capacity, new_token(TokenType_EqualEqual, line, NULL));
                     i++;
                 } else {
-                    push_token(&tokens, &t_len, &t_capacity, new_token(Equal, line, NULL));
+                    push_token(&tokens, &t_len, &t_capacity, new_token(TokenType_Equal, line, NULL));
                 }
                 break;
             case '>':
                 if (peek_char(input, input_len, i) == '=') {
-                    push_token(&tokens, &t_len, &t_capacity, new_token(GreaterEqual, line, NULL));
+                    push_token(&tokens, &t_len, &t_capacity, new_token(TokenType_GreaterEqual, line, NULL));
                     i++;
                 } else {
-                    push_token(&tokens, &t_len, &t_capacity, new_token(Greater, line, NULL));
+                    push_token(&tokens, &t_len, &t_capacity, new_token(TokenType_Greater, line, NULL));
                 }
                 break;
             case '<':
                 if (peek_char(input, input_len, i) == '=') {
-                    push_token(&tokens, &t_len, &t_capacity, new_token(LesserEqual, line, NULL));
+                    push_token(&tokens, &t_len, &t_capacity, new_token(TokenType_LesserEqual, line, NULL));
                     i++;
                 } else {
-                    push_token(&tokens, &t_len, &t_capacity, new_token(Lesser, line, NULL));
+                    push_token(&tokens, &t_len, &t_capacity, new_token(TokenType_Lesser, line, NULL));
                 }
                 break;
             case '&':
-                push_token(&tokens, &t_len, &t_capacity, new_token(Bang, line, NULL));
+                push_token(&tokens, &t_len, &t_capacity, new_token(TokenType_Bang, line, NULL));
                 break;
             case '|':
-                push_token(&tokens, &t_len, &t_capacity, new_token(Or, line, NULL));
+                push_token(&tokens, &t_len, &t_capacity, new_token(TokenType_Or, line, NULL));
                 break;
             case ',':
-                push_token(&tokens, &t_len, &t_capacity, new_token(Comma, line, NULL));
+                push_token(&tokens, &t_len, &t_capacity, new_token(TokenType_Comma, line, NULL));
                 break;
             case '.':
-                push_token(&tokens, &t_len, &t_capacity, new_token(Point, line, NULL));
+                push_token(&tokens, &t_len, &t_capacity, new_token(TokenType_Point, line, NULL));
                 break;
             case ';':
-                push_token(&tokens, &t_len, &t_capacity, new_token(Semicolon, line, NULL));
+                push_token(&tokens, &t_len, &t_capacity, new_token(TokenType_Semicolon, line, NULL));
                 break;
             case '"': {
                 char* str = extract_string(input, input_len, &i, line);
@@ -113,7 +113,7 @@ ScanResult_t scan(char* input, size_t input_len) {
                 }
 
                 lit->str = str;
-                push_token(&tokens, &t_len, &t_capacity, new_token(StringV, line, lit));
+                push_token(&tokens, &t_len, &t_capacity, new_token(TokenType_StringV, line, lit));
                 break;
             }
             case '\'': {
@@ -125,7 +125,7 @@ ScanResult_t scan(char* input, size_t input_len) {
                 }
 
                 lit->ch = input[i];
-                push_token(&tokens, &t_len, &t_capacity, new_token(CharV, line, lit));
+                push_token(&tokens, &t_len, &t_capacity, new_token(TokenType_CharV, line, lit));
 
                 i++;
                 if (input[i] != '\'') {
@@ -155,12 +155,14 @@ ScanResult_t scan(char* input, size_t input_len) {
 
                     if (is_float) {
                         lit->db = strtod(num_str, NULL);
-                        push_token(&tokens, &t_len, &t_capacity, new_token(FloatV, line, lit));
+                        push_token(&tokens, &t_len, &t_capacity, new_token(TokenType_FloatV, line, lit));
                     } 
                     else {
                         lit->ln = atol(num_str);
-                        push_token(&tokens, &t_len, &t_capacity, new_token(IntV, line, lit));
+                        push_token(&tokens, &t_len, &t_capacity, new_token(TokenType_IntV, line, lit));
                     }
+
+                    free(num_str);
 
                     i--;
 
@@ -217,17 +219,17 @@ Token_t keyword_to_token(char* identifier, size_t line) {
     };
 
     TokenType_t values[] = {
-        If,
-        Else,
-        Func,
-        For,
-        Return,
-        While,
-        IntT, 
-        FloatT, 
-        CharT, 
-        StringT, 
-        BoolT,
+        TokenType_If,
+        TokenType_Else,
+        TokenType_Func,
+        TokenType_For,
+        TokenType_Return,
+        TokenType_While,
+        TokenType_IntT,
+        TokenType_FloatT,
+        TokenType_CharT,
+        TokenType_StringT,
+        TokenType_BoolT,
     };
     
     size_t len = sizeof(keys) / sizeof(char*);
@@ -241,21 +243,21 @@ Token_t keyword_to_token(char* identifier, size_t line) {
     Literal_t* lit = (Literal_t*)malloc(sizeof(Literal_t));
     if (lit == NULL) {
         report_error("malloc failed", line);
-        return new_token(Identifier, line, NULL);
+        return new_token(TokenType_Identifier, line, NULL);
     }
 
     if (strcmp(identifier, "true") == 0) {
         lit->b = true;
-        return new_token(BoolV, line, lit);
+        return new_token(TokenType_BoolV, line, lit);
     }
 
     if (strcmp(identifier, "false") == 0) {
         lit->b = false;
-        return new_token(BoolV, line, lit);
+        return new_token(TokenType_BoolV, line, lit);
     }
 
     lit->str = identifier;
-    return new_token(Identifier, line, lit);
+    return new_token(TokenType_Identifier, line, lit);
 }
 
 char* extract_identifier(char* input, size_t input_len, size_t* index, size_t line) {
