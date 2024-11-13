@@ -10,6 +10,6 @@
 
 #include "expression.h"
 
-Expression_t parse(Token_t* tokens, size_t len);
+Expression_t* parse(Token_t* tokens, size_t len);
 
 #endif // PARSER_H

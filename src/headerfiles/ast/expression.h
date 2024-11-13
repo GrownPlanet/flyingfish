@@ -15,9 +15,9 @@ typedef struct EV_Unary_t EV_Unary_t;
 typedef struct EV_Literal_t EV_Literal_t;
 
 typedef enum {
-    Binary,
-    Unary,
-    Literal,
+    ExpressionType_Binary,
+    ExpressionType_Unary,
+    ExpressionType_Literal,
 } ExpressionType_t;
 
 typedef union {
@@ -42,9 +42,9 @@ struct EV_Unary_t {
     Expression_t value;
 };
 
-struct EV_Literl_t {
-    Token_t type;
-    Literal_t value;
+struct EV_Literal_t {
+    TokenType_t type;
+    Literal_t* value;
 };
 
 #endif // EXPRESSION_H
