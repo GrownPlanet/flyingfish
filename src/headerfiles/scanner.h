@@ -16,5 +16,6 @@ typedef struct {
 } ScanResult_t;
 
 ScanResult_t scan(char* input, size_t input_len);
+void free_tokens(ScanResult_t tokens);
 
 #endif // SCANNER_H

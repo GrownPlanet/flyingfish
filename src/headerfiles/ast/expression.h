@@ -33,13 +33,13 @@ typedef struct {
 
 struct EV_Binary_t {
     Expression_t left;
-    Token_t Operator;
-    Expression_t rigth;
+    Token_t operator;
+    Expression_t right;
 };
 
 struct EV_Unary_t {
-    Token_t Operator;
-    Expression_t value;
+    Token_t operator;
+    Expression_t operant;
 };
 
 struct EV_Literal_t {

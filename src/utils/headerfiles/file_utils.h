@@ -1,7 +1,7 @@
 /*
  * File utils
  *
- * Simple opperations for files.
+ * Simple operations for files.
  *
  */
 

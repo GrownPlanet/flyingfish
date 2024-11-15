@@ -56,6 +56,9 @@ ScanResult_t scan(char* input, size_t input_len) {
             case '*':
                 push_token(&tokens, &t_len, &t_capacity, new_token(TokenType_Star, line, NULL));
                 break;
+            case '!':
+                push_token(&tokens, &t_len, &t_capacity, new_token(TokenType_Bang, line, NULL));
+                break;
             case '/':
                 if (peek_char(input, input_len, i) == '/') {
                     while (input[i] != '\n') {
@@ -354,4 +357,15 @@ char* extract_string(char* input, size_t input_len, size_t* index, size_t line) 
     push((void**)&str, &s_len, &s_capacity, sizeof(char), &null_ch);
 
     return str;
+}
+
+void free_tokens(ScanResult_t tokens) {
+    for (size_t i = 0; i < tokens.len; i++) {
+        Token_t token = tokens.tokens[i];
+        if (token.type == TokenType_StringV || token.type == TokenType_Identifier) {
+            free(token.literal->str);
+        }
+        free(token.literal);
+    }
+    free(tokens.tokens);
 }

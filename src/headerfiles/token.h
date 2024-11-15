@@ -46,5 +46,6 @@ typedef struct {
 } Token_t;
 
 Token_t new_token(TokenType_t type, size_t line, Literal_t* literal);
+void print_token_type(TokenType_t token_type);
 
 #endif // TOKEN_H

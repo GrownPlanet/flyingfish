@@ -10,6 +10,7 @@
 #include "parser.h"
 
 void print_literal(TokenType_t type, Literal_t* lit);
+void print_expression(Expression_t* expression);
 
 int main(int argc, char* argv[]) {
     if (argc != 2) {
@@ -27,6 +28,7 @@ int main(int argc, char* argv[]) {
     }
 
     // scanning tokens
+    printf("tokens:\n");
     ScanResult_t tokens = scan(file, strlen(file));
 
     if (had_error()) {
@@ -37,17 +39,19 @@ int main(int argc, char* argv[]) {
 
     for (size_t i = 0; i < tokens.len; i++) {
         Token_t token = tokens.tokens[i];
-        printf("%d: ", token.type);
+        print_token_type(token.type);
+        printf(": ");
         print_literal(token.type, token.literal);
 
         if (i + 1 < tokens.len) {
             printf(", ");
         }
     }
-    printf("\n");
+    printf("\n\n");
 
     // parsing tokens
-    Expression_t* expr = parse(tokens.tokens, tokens.len);
+    printf("ast:\n");
+    Expression_t* expr = parse(tokens);
 
     if (had_error()) {
         print_errors();
@@ -55,28 +59,13 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    switch (expr->type) {
-        case ExpressionType_Literal:
-            EV_Literal_t* lit = expr->value.literal;
-            printf("%d: ", lit->type);
-            print_literal(lit->type, lit->value);
-            printf("\n");
-            break;
-        default:
-            return 1;
-    }
+    print_expression(expr);
+    printf("\n");
 
     // freeing data
     free(file);
     free_error();
-    for (size_t i = 0; i < tokens.len; i++) {
-        Token_t token = tokens.tokens[i];
-        if (token.type == TokenType_StringV || token.type == TokenType_Identifier) {
-            free(token.literal->str);
-        }
-        free(token.literal);
-    }
-    free(tokens.tokens);
+    free_tokens(tokens);
 
     return 0;
 }
@@ -101,6 +90,30 @@ void print_literal(TokenType_t type, Literal_t* lit) {
             break;
         default:
             printf("()");
+            break;
+    }
+}
+
+void print_expression(Expression_t* expr) {
+    switch (expr->type) {
+        case ExpressionType_Literal:
+            EV_Literal_t* lit = expr->value.literal;
+            printf("(");
+            print_token_type(lit->type);
+            printf(": ");
+            print_literal(lit->type, lit->value);
+            printf(")");
+            break;
+        case ExpressionType_Unary:
+            EV_Unary_t* un = expr->value.unary;
+            printf("(");
+            print_token_type(un->operator.type);
+            printf(" ");
+            print_expression(&un->operant);
+            printf(")");
+            break;
+        default:
+            printf("not yet implemented!\n");
             break;
     }
 }
