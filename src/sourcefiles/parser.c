@@ -1,3 +1,5 @@
+#include <stdio.h>
+
 #include "parser.h"
 #include "expression.h"
 #include "token.h"
@@ -6,11 +8,11 @@
 /*
  * | primary V+TODO
  * |
- * | unary
+ * | unary V
  * |
- * | multiplication/division
+ * | multiplication/division V
  * |
- * | plus/minus
+ * | plus/minus V
  * | 
  * | comparison
  * | 
@@ -52,10 +54,11 @@ Expression_t* parse_primary(Token_t* tokens, size_t len, size_t* index) {
             ExpressionValue_t v;
             v.literal = lit;
             expr->value = v;
+            advance(len, index);
             break;
         case TokenType_LeftParen:
             // TODO: grouping
-            report_error("TODO: parser.c line 47", token.line);
+            report_error("TODO: parser.c line 58", token.line);
             return NULL;
         default:
             report_error("expected primary", token.line);
@@ -80,8 +83,11 @@ Expression_t* parse_unary(Token_t* tokens, size_t len, size_t* index) {
         expr->type = ExpressionType_Unary;
 
         EV_Unary_t* un = (EV_Unary_t*)malloc(sizeof(EV_Unary_t));
+        if (un == NULL) {
+            report_error("malloc failed!\n", token.line);
+            return NULL;
+        }
         un->operator = token;
-        // printf("DEBUG %d\n", un->operatro);
 
         Expression_t* operant = parse_primary(tokens, len, index);
         un->operant = *operant;
@@ -96,9 +102,61 @@ Expression_t* parse_unary(Token_t* tokens, size_t len, size_t* index) {
     return parse_primary(tokens, len, index);
 }
 
+Expression_t* parse_binary(
+    Token_t* tokens, size_t len, size_t* index, TokenType_t types[2], 
+    Expression_t* (*base_func)(Token_t*, size_t, size_t*) // the function that is one order higher
+) {
+    Expression_t* expr = base_func(tokens, len, index);
+
+    Token_t token = tokens[*index];
+    while (token.type == types[0] || token.type == types[1]) {
+        Expression_t* right = (Expression_t*)malloc(sizeof(Expression_t));
+        if (right == NULL) {
+            report_error("malloc failed!\n", token.line);
+            return NULL;
+        }
+
+        right->type = ExpressionType_Binary;
+
+        EV_Binary_t* bin = (EV_Binary_t*)malloc(sizeof(EV_Binary_t));
+        if (bin == NULL) {
+            report_error("malloc failed!\n", token.line);
+            return NULL;
+        }
+
+        bin->left = *expr;
+        bin->operator = token;
+
+        advance(len, index);
+        token = tokens[*index];
+
+        bin->right = *base_func(tokens, len, index);
+        token = tokens[*index];
+
+        ExpressionValue_t v;
+        v.binary = bin;
+        right->value = v;
+
+        expr = right;
+    }
+
+    return expr;
+
+}
+
+Expression_t* parse_factor(Token_t* tokens, size_t len, size_t* index) {
+    TokenType_t types[2] = {TokenType_Star, TokenType_Slash};
+    return parse_binary(tokens, len, index, types, parse_unary);
+}
+
+Expression_t* parse_term(Token_t* tokens, size_t len, size_t* index) {
+    TokenType_t types[2] = {TokenType_Plus, TokenType_Minus};
+    return parse_binary(tokens, len, index, types, parse_factor);
+}
+
 Expression_t* parse(ScanResult_t tokens) {
     size_t index = 0;
-    return parse_unary(tokens.tokens, tokens.len, &index);
+    return parse_term(tokens.tokens, tokens.len, &index);
 }
 
 void advance(size_t len, size_t* index) {

@@ -112,8 +112,15 @@ void print_expression(Expression_t* expr) {
             print_expression(&un->operant);
             printf(")");
             break;
-        default:
-            printf("not yet implemented!\n");
+        case ExpressionType_Binary:
+            EV_Binary_t* bin = expr->value.binary;
+            printf("(");
+            print_expression(&bin->left);
+            printf(" ");
+            print_token_type(bin->operator.type);
+            printf(" ");
+            print_expression(&bin->right);
+            printf(")");
             break;
     }
 }

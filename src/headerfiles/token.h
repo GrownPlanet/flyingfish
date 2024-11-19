@@ -32,8 +32,8 @@ typedef enum {
 } TokenType_t;
 
 typedef union {
-    double db;
     long ln;
+    double db;
     char* str;
     char ch;
     bool b;
