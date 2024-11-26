@@ -11,6 +11,6 @@
 #include "bytecode.h"
 #include "expression.h"
 
-Instruction_t* compile(Expression_t* expr);
+Instructions_t* compile(Expression_t* expr);
 
 #endif // COMPILER_H

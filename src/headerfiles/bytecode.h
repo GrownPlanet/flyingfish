@@ -19,10 +19,11 @@ typedef enum {
 } InstructionSet_t;
 
 typedef struct {
-    InstructionSet_t* instructions;
+    char* chunks;
     size_t len;
+    size_t capacity;
 } Instructions_t;
 
-void push_instruction(Instructions_t* instr);
+void push_chunck(Instructions_t* instructions, void* chunck, size_t chunck_size);
 
 #endif // BYTECODE_H
