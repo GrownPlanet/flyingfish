@@ -47,4 +47,6 @@ struct EV_Literal_t {
     Literal_t* value;
 };
 
+void free_expression(Expression_t* expr);
+
 #endif // EXPRESSION_H

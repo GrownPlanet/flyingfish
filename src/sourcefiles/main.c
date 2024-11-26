@@ -66,6 +66,8 @@ int main(int argc, char* argv[]) {
     free(file);
     free_error();
     free_tokens(tokens);
+    free_expression(expr);
+    free(expr);
 
     return 0;
 }
