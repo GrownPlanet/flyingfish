@@ -6,17 +6,18 @@
 #include "array_utils.h"
 #include "bytecode.h"
 
-void push_chunck(Instructions_t* instr, void* chunck, size_t chunk_size) {
-    while (instr->len + chunk_size >= instr->capacity) {
-        instr->capacity *= 2;
-        instr->chunks = realloc(instr->chunks, instr->capacity);
+void push_chunk(ByteCode_t* bytecode, void* chunk, size_t chunk_size) {
+    while (bytecode->len + chunk_size >= bytecode->capacity) {
+        bytecode->capacity *= 2;
+        bytecode->chunks = realloc(bytecode->chunks, bytecode->capacity);
 
-        if (instr->chunks == NULL) {
+        if (bytecode->chunks == NULL) {
             printf("Realloc failed!\n");
             exit(1);
         }
     }
 
-    memcpy(instr->chunks + instr->len, chunck, chunk_size);
-    instr->len += chunk_size;
+    memcpy(bytecode->chunks + bytecode->len, chunk, chunk_size);
+
+    bytecode->len += chunk_size;
 }

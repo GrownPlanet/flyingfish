@@ -25,6 +25,7 @@
 
 void advance(size_t len, size_t* index);
 Expression_t* parse(ScanResult_t tokens);
+Expression_t* parse_term(Token_t* tokens, size_t len, size_t* index);
 
 Expression_t* parse_primary(Token_t* tokens, size_t len, size_t* index) {
     Token_t token = tokens[*index];
@@ -34,6 +35,7 @@ Expression_t* parse_primary(Token_t* tokens, size_t len, size_t* index) {
         report_error("malloc failed!\n", token.line);
         return NULL;
     }
+    expr->line = token.line;
 
     switch (token.type) {
         case TokenType_IntV:
@@ -58,9 +60,20 @@ Expression_t* parse_primary(Token_t* tokens, size_t len, size_t* index) {
             advance(len, index);
             break;
         case TokenType_LeftParen:
-            // TODO: grouping
-            report_error("TODO: parser.c line 58", token.line);
-            return NULL;
+            printf("DEBUG\n");
+            // TODO: change when more of the parser is implemented
+            advance(len, index);
+            Expression_t* expr = parse_term(tokens, len, index);
+
+            token = tokens[*index];
+
+            if (token.type != TokenType_RightParen) {
+                report_error("expected left paren after expression", token.line);
+                return NULL;
+            }
+            advance(len, index);
+
+            return expr;
         default:
             report_error("expected primary", token.line);
             return NULL;
@@ -80,6 +93,7 @@ Expression_t* parse_unary(Token_t* tokens, size_t len, size_t* index) {
             report_error("malloc failed!\n", token.line);
             return NULL;
         }
+        expr->line = token.line;
 
         expr->type = ExpressionType_Unary;
 
@@ -88,9 +102,12 @@ Expression_t* parse_unary(Token_t* tokens, size_t len, size_t* index) {
             report_error("malloc failed!\n", token.line);
             return NULL;
         }
-        un->operator = token;
+        un->operator = token.type;
 
         Expression_t* operant = parse_primary(tokens, len, index);
+        if (operant == NULL) {
+            return NULL;
+        }
         un->operant = *operant;
 
         ExpressionValue_t v;
@@ -116,6 +133,7 @@ Expression_t* parse_binary(
             report_error("malloc failed!\n", token.line);
             return NULL;
         }
+        right->line = token.line;
 
         right->type = ExpressionType_Binary;
 

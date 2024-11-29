@@ -29,6 +29,7 @@ typedef union {
 typedef struct {
     ExpressionType_t type;
     ExpressionValue_t value;
+    size_t line;
 } Expression_t;
 
 struct EV_Binary_t {
@@ -38,7 +39,7 @@ struct EV_Binary_t {
 };
 
 struct EV_Unary_t {
-    Token_t operator;
+    TokenType_t operator;
     Expression_t operant;
 };
 

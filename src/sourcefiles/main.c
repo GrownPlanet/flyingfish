@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "bytecode.h"
+#include "compiler.h"
 #include "expression.h"
 #include "file_utils.h"
 #include "scanner.h"
@@ -60,7 +62,29 @@ int main(int argc, char* argv[]) {
     }
 
     print_expression(expr);
+    printf("\n\nbytecode:\n");
+
+    // compiling the syntax tree
+    ByteCode_t bytecode = compile(expr);
+
+    if (had_error()) {
+        print_errors();
+        free_error();
+        return 1;
+    }
+
+    for (size_t i = 0; i < bytecode.len; i++) {
+        printf("%02x ", bytecode.chunks[i]);
+    }
     printf("\n");
+
+    /* extract number back from bytes, may need it later
+    long num = 0;
+    for (size_t i = 0; i < sizeof(num); i++) {
+        num = num | (bytecode.chunks[i] << (i * 8));
+    }
+    printf("%ld\n", num);
+    */
 
     // freeing data
     free(file);
@@ -109,7 +133,7 @@ void print_expression(Expression_t* expr) {
         case ExpressionType_Unary:
             EV_Unary_t* un = expr->value.unary;
             printf("(");
-            print_token_type(un->operator.type);
+            print_token_type(un->operator);
             printf(" ");
             print_expression(&un->operant);
             printf(")");

@@ -12,18 +12,22 @@
 
 typedef enum {
     Instruction_Add,
+    Instruction_And,
     Instruction_Div,
+    Instruction_Neg,
+    Instruction_Not,
     Instruction_Mov,
     Instruction_Mul,
+    Instruction_Or,
     Instruction_Sub,
 } InstructionSet_t;
 
 typedef struct {
-    char* chunks;
+    unsigned char* chunks;
     size_t len;
     size_t capacity;
-} Instructions_t;
+} ByteCode_t;
 
-void push_chunck(Instructions_t* instructions, void* chunck, size_t chunck_size);
+void push_chunk(ByteCode_t* bytecode, void* chunck, size_t chunck_size);
 
 #endif // BYTECODE_H
