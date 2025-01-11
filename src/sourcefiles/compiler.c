@@ -5,9 +5,14 @@
 #include "expression.h"
 #include "error.h"
 
-void compile_expression(ByteCode_t* bytecode, Expression_t* expr);
+typedef struct {
+    ByteCode_t bytecode;
+    size_t stack_pointer;
+} Compiler_t;
 
-void compile_literal(ByteCode_t* bytecode, EV_Literal_t* literal) {
+void compile_expression(Compiler_t* compiler, Expression_t* expr);
+
+void compile_literal(Compiler_t* compiler, EV_Literal_t* literal) {
     size_t type_size = 0;
     switch (literal->type) {
         case TokenType_IntV:
@@ -27,11 +32,15 @@ void compile_literal(ByteCode_t* bytecode, EV_Literal_t* literal) {
             exit(1);
             break;
     }
-    push_chunk(bytecode, (void*)literal->value, type_size);
+    Instruction_t instr = Instruction_Mov;
+    push_chunk(&compiler->bytecode, (void*)(&instr), sizeof(Instruction_t));
+    // TODO: push stack index to
+    push_chunk(&compiler->bytecode, (void*)(&compiler->stack_pointer), sizeof(size_t));
+    push_chunk(&compiler->bytecode, (void*)literal->value, type_size);
 }
 
-void compile_unary(ByteCode_t* bytecode, EV_Unary_t* unary, size_t line) {
-    InstructionSet_t instr;
+void compile_unary(Compiler_t* compiler, EV_Unary_t* unary, size_t line) {
+    Instruction_t instr;
     switch (unary->operator) {
         case TokenType_Minus:
             instr = Instruction_Neg;
@@ -44,17 +53,18 @@ void compile_unary(ByteCode_t* bytecode, EV_Unary_t* unary, size_t line) {
             report_error("unexpected token in a unary", line);
             break;
     }
-    push_chunk(bytecode, (void*)(&instr), sizeof(InstructionSet_t));
-    compile_expression(bytecode, &unary->operant);
+    compile_expression(compiler, &unary->operant);
+    push_chunk(&compiler->bytecode, (void*)(&instr), sizeof(Instruction_t));
+    // TODO: push stack index to not
 }
 
-void compile_expression(ByteCode_t* bytecode, Expression_t* expr) {
+void compile_expression(Compiler_t* compiler, Expression_t* expr) {
     switch (expr->type) {
         case ExpressionType_Literal:
-            compile_literal(bytecode, expr->value.literal);
+            compile_literal(compiler, expr->value.literal);
             break;
         case ExpressionType_Unary:
-            compile_unary(bytecode, expr->value.unary, expr->line);
+            compile_unary(compiler, expr->value.unary, expr->line);
             break;
         default:
             printf("TODO 01: handle more expression types: compiler.c\n");
@@ -68,8 +78,11 @@ ByteCode_t compile(Expression_t* expr) {
     ByteCode_t bytecode = {
         data, 0, 1,
     };
+    Compiler_t compiler = {
+        bytecode, 0
+    };
 
-    compile_expression(&bytecode, expr);
+    compile_expression(&compiler, expr);
 
-    return bytecode;
+    return compiler.bytecode;
 }

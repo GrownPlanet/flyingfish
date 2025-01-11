@@ -8,7 +8,6 @@ char* read_file_to_string(char* filename) {
   FILE* file = fopen(filename, "r");
 
   if (file == NULL) {
-    printf("Failed to open file!\n");
     return NULL;
   }
 

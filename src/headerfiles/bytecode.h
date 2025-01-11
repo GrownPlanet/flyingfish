@@ -20,7 +20,12 @@ typedef enum {
     Instruction_Mul,
     Instruction_Or,
     Instruction_Sub,
-} InstructionSet_t;
+} Instruction_t;
+
+typedef enum {
+    AddressingMode_Direct,
+    AddressingMode_Indirect,
+} AddressingMode_t;
 
 typedef struct {
     unsigned char* chunks;
