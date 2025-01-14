@@ -5,6 +5,8 @@
  *
  * */
 
+// ToDo: different instructions for adding ints vs floats
+
 #ifndef BYTECODE_H
 #define BYTECODE_H
 

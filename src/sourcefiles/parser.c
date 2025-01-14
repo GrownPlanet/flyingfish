@@ -122,7 +122,7 @@ Expression_t* parse_unary(Token_t* tokens, size_t len, size_t* index) {
 
 Expression_t* parse_binary(
     Token_t* tokens, size_t len, size_t* index, TokenType_t types[2], 
-    Expression_t* (*base_func)(Token_t*, size_t, size_t*) // the function that is one order higher
+    Expression_t* (*base_func)(Token_t*, size_t, size_t*) // higher order function
 ) {
     Expression_t* expr = base_func(tokens, len, index);
 
