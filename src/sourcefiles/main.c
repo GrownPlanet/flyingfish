@@ -4,6 +4,7 @@
 
 #include "bytecode.h"
 #include "compiler.h"
+#include "emitter.h"
 #include "expression.h"
 #include "file_utils.h"
 #include "scanner.h"
@@ -13,17 +14,33 @@
 
 void print_literal(TokenType_t type, Literal_t* lit);
 void print_expression(Expression_t* expression);
+void print_help_menu(char* pathname);
+int compile_program(char* filename);
 
 int main(int argc, char* argv[]) {
-    if (argc != 2) {
-        printf("Ussage: %s {program file}.\n", argv[0]);
+    if (argc != 3) {
+        print_help_menu(argv[0]);
         return 1;
     }
 
     init_error();
 
+    if (strcmp(argv[1], "compile") || strcmp(argv[1], "c")) {
+        return compile_program(argv[2]);
+    } else if (strcmp(argv[1], "compile") || strcmp(argv[1], "c")) {
+        printf("ToDo!");
+        return 1;
+    } else {
+        print_help_menu(argv[0]);
+        return 1;
+    }
+
+    return 0;
+}
+
+int compile_program(char* filename) {
     // reading the file
-    char* file = read_file_to_string(argv[1]);
+    char* file = read_file_to_string(filename);
     if (file == NULL) {
         printf("Error reading file!\n");
         return 1;
@@ -78,6 +95,15 @@ int main(int argc, char* argv[]) {
     }
     printf("\n");
 
+    // emmitter
+    emit(&bytecode, "out.cff");
+    if (had_error()) {
+        print_errors();
+        free_error();
+        return 1;
+    }
+
+
     /* extract number back from bytes, may need it later
     long num = 0;
     for (size_t i = 0; i < sizeof(num); i++) {
@@ -92,6 +118,7 @@ int main(int argc, char* argv[]) {
     free_tokens(tokens);
     free_expression(expr);
     free(expr);
+    free(bytecode.chunks);
 
     return 0;
 }
@@ -118,6 +145,13 @@ void print_literal(TokenType_t type, Literal_t* lit) {
             printf("()");
             break;
     }
+}
+
+void print_help_menu(char* pathname) {
+    printf("Ussage: `%s {command} {program file | compiled code}`\n", pathname);
+    printf("Commands:\n\
+compile, c\n\
+run, r\n");
 }
 
 void print_expression(Expression_t* expr) {
