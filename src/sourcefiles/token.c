@@ -5,9 +5,9 @@
 
 Token_t new_token(TokenType_t type, size_t line, Literal_t* literal) {
     Token_t token = {
-        type,
-        line,
-        literal,
+        .type = type,
+        .line = line,
+        .literal = literal,
     };
 
     return token;

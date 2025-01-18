@@ -22,7 +22,7 @@ void compile_literal(Compiler_t* compiler, EV_Literal_t* literal) {
     AddressingMode_t adr = AddressingMode_Direct;
     push_chunk(&compiler->bytecode, (void*)(&adr), sizeof(AddressingMode_t));
     // ARG2
-    push_chunk(&compiler->bytecode, (void*)literal->value, sizeof(long));
+    push_chunk(&compiler->bytecode, (void*)literal->value, sizeof(literal));
 }
 
 void compile_unary(Compiler_t* compiler, EV_Unary_t* unary, size_t line) {
@@ -115,11 +115,15 @@ void compile_expression(Compiler_t* compiler, Expression_t* expr) {
 
 ByteCode_t compile(Expression_t* expr) {
     unsigned char* data = (unsigned char*)malloc(sizeof(unsigned char));
+
     ByteCode_t bytecode = {
-        data, 0, 1,
+        .chunks = data, 
+        .len = 0, 
+        .capacity = 1,
     };
     Compiler_t compiler = {
-        bytecode, 0
+        .bytecode = bytecode, 
+        .stack_pointer = 0,
     };
 
     compile_expression(&compiler, expr);

@@ -10,6 +10,7 @@
 
 #include <stdbool.h>
 #include <stdlib.h>
+#include <stdint.h>
 
 typedef enum {
     // parens, braces (0 - 3)
@@ -32,7 +33,7 @@ typedef enum {
 } TokenType_t;
 
 typedef union {
-    long ln;
+    int64_t ln;
     double db;
     char* str;
     char ch;

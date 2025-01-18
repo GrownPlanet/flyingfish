@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -g -MMD -MP
+CFLAGS = -Wall -Wextra -std=c99
 
 TARGET_EXEC = flyingfish
 

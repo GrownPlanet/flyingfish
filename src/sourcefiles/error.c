@@ -20,8 +20,8 @@ void init_error() {
 
 void report_error(char* message, size_t line) {
     Error_t error = {
-        message, 
-        line
+        .message = message, 
+        .line = line
     };
     push((void**)&ERRORS, &ERRORS_LEN, &ERRORS_CAPACITY, sizeof(Error_t), &error);
 }

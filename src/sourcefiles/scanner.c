@@ -20,7 +20,8 @@ ScanResult_t scan(char* input, size_t input_len) {
     Token_t* tokens = (Token_t*)malloc(sizeof(Token_t));
 
     ScanResult_t fail_result = {
-        NULL, 0
+        .tokens = NULL, 
+        .len = 0,
     };
 
     if (tokens == NULL) {
@@ -188,7 +189,8 @@ ScanResult_t scan(char* input, size_t input_len) {
     }
 
     ScanResult_t scan_result = {
-        tokens, t_len
+        .tokens = tokens, 
+        .len = t_len
     };
 
     return scan_result;
