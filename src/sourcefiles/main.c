@@ -12,6 +12,7 @@
 #include "error.h"
 #include "parser.h"
 #include "string_utils.h"
+#include "interpreter.h"
 
 void print_literal(TokenType_t type, Literal_t* lit);
 void print_expression(Expression_t* expression);
@@ -125,21 +126,22 @@ int run_program(char* filename) {
         printf("Error reading file!\n");
         return 1;
     }
-    unsigned char* data = (unsigned char*)file.chars;
+    unsigned char* code = (unsigned char*)file.chars;
 
     // print read file
     for (size_t i = 0; i < file.len; i++) {
-        printf("%02x ", data[i]);
+        printf("%02x ", code[i]);
     }
     printf("\n");
+    
+    // interpret the compiled code
+    Interpreter_t interpreter = new_interpreter(code, file.len);
+    int result = interpret(interpreter);
 
-    /* extract number back from bytes, may need it later
-    long num = 0;
-    for (size_t i = 0; i < sizeof(num); i++) {
-        num = num | (bytecode.chunks[i] << (i * 8));
-    }
-    printf("%ld\n", num);
-    */
+    // freeing data
+    free(file.chars);
+
+    return result;
 }
 
 void print_literal(TokenType_t type, Literal_t* lit) {
