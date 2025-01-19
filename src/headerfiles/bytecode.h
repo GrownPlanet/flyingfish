@@ -5,23 +5,27 @@
  *
  * */
 
-// ToDo: different instructions for adding ints vs floats
-
 #ifndef BYTECODE_H
 #define BYTECODE_H
 
 #include <stdlib.h>
 
 typedef enum {
-    Instruction_Add,
+    Instruction_AddI,
+    Instruction_AddF,
     Instruction_And,
-    Instruction_Div,
-    Instruction_Neg,
-    Instruction_Not,
+    Instruction_DivI,
+    Instruction_DivF,
     Instruction_Mov,
-    Instruction_Mul,
+    Instruction_MulI,
+    Instruction_MulF,
+    Instruction_NegI,
+    Instruction_NegF,
+    Instruction_Not,
     Instruction_Or,
-    Instruction_Sub,
+    Instruction_SubI,
+    Instruction_SubF,
+    Instruction_Xor,
 } Instruction_t;
 
 typedef enum {

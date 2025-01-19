@@ -9,13 +9,14 @@
 #define SCANNER_H
 
 #include "token.h"
+#include "string_utils.h"
 
 typedef struct {
     Token_t* tokens;
     size_t len;
 } ScanResult_t;
 
-ScanResult_t scan(char* input, size_t input_len);
+ScanResult_t scan(String_t input);
 void free_tokens(ScanResult_t tokens);
 
 #endif // SCANNER_H

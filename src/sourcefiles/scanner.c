@@ -7,34 +7,32 @@
 #include "error.h"
 #include "scanner.h"
 
-char peek_char(char* input, size_t input_len, size_t index);
+char peek_char(String_t input, size_t index);
 void push_token(Token_t** tokens, size_t* t_capacity, size_t* t_len, Token_t token);
 
 Token_t keyword_to_token(char* identifier, size_t line);
 
-char* extract_identifier(char* input, size_t input_len, size_t* index, size_t line);
-char* extract_num(char* input, size_t input_len, size_t* index, bool* is_float, size_t line);
-char* extract_string(char* input, size_t input_len, size_t* index, size_t line);
+char* extract_identifier(String_t input, size_t* index, size_t line);
+char* extract_num(String_t input, size_t* index, bool* is_float, size_t line);
+char* extract_string(String_t input, size_t* index, size_t line);
 
-ScanResult_t scan(char* input, size_t input_len) {
+ScanResult_t scan(String_t input) {
     Token_t* tokens = (Token_t*)malloc(sizeof(Token_t));
-
-    ScanResult_t fail_result = {
-        .tokens = NULL, 
-        .len = 0,
-    };
 
     if (tokens == NULL) {
         report_error("malloc failed", 0);
-        return fail_result;
+        return (ScanResult_t){
+            .tokens = NULL,
+            .len = 0,
+        };
     }
 
     size_t t_capacity = 1;
     size_t t_len = 0;
     size_t line = 0;
 
-    for (size_t i = 0; i < input_len; i++) {
-        char ch = input[i];
+    for (size_t i = 0; i < input.len; i++) {
+        char ch = input.chars[i];
         switch (ch) {
             case '(':
                 push_token(&tokens, &t_len, &t_capacity, new_token(TokenType_LeftParen, line, NULL));
@@ -61,8 +59,8 @@ ScanResult_t scan(char* input, size_t input_len) {
                 push_token(&tokens, &t_len, &t_capacity, new_token(TokenType_Bang, line, NULL));
                 break;
             case '/':
-                if (peek_char(input, input_len, i) == '/') {
-                    while (input[i] != '\n') {
+                if (peek_char(input, i) == '/') {
+                    while (input.chars[i] != '\n') {
                         i++;
                     }
                 } else {
@@ -70,7 +68,7 @@ ScanResult_t scan(char* input, size_t input_len) {
                 }
                 break;
             case '=':
-                if (peek_char(input, input_len, i) == '=') {
+                if (peek_char(input, i) == '=') {
                     push_token(&tokens, &t_len, &t_capacity, new_token(TokenType_EqualEqual, line, NULL));
                     i++;
                 } else {
@@ -78,7 +76,7 @@ ScanResult_t scan(char* input, size_t input_len) {
                 }
                 break;
             case '>':
-                if (peek_char(input, input_len, i) == '=') {
+                if (peek_char(input, i) == '=') {
                     push_token(&tokens, &t_len, &t_capacity, new_token(TokenType_GreaterEqual, line, NULL));
                     i++;
                 } else {
@@ -86,7 +84,7 @@ ScanResult_t scan(char* input, size_t input_len) {
                 }
                 break;
             case '<':
-                if (peek_char(input, input_len, i) == '=') {
+                if (peek_char(input, i) == '=') {
                     push_token(&tokens, &t_len, &t_capacity, new_token(TokenType_LesserEqual, line, NULL));
                     i++;
                 } else {
@@ -109,11 +107,14 @@ ScanResult_t scan(char* input, size_t input_len) {
                 push_token(&tokens, &t_len, &t_capacity, new_token(TokenType_Semicolon, line, NULL));
                 break;
             case '"': {
-                char* str = extract_string(input, input_len, &i, line);
+                char* str = extract_string(input, &i, line);
                 Literal_t* lit = (Literal_t*)malloc(sizeof(Literal_t));
                 if (lit == NULL) {
                     report_error("malloc failed", line);
-                    return fail_result;
+                    return (ScanResult_t){
+                        .tokens = NULL,
+                        .len = 0,
+                    };
                 }
 
                 lit->str = str;
@@ -125,14 +126,17 @@ ScanResult_t scan(char* input, size_t input_len) {
                 Literal_t* lit = (Literal_t*)malloc(sizeof(Literal_t));
                 if (lit == NULL) {
                     report_error("malloc failed", line);
-                    return fail_result;
+                    return (ScanResult_t){
+                        .tokens = NULL,
+                        .len = 0,
+                    };
                 }
 
-                lit->ch = input[i];
+                lit->ch = input.chars[i];
                 push_token(&tokens, &t_len, &t_capacity, new_token(TokenType_CharV, line, lit));
 
                 i++;
-                if (input[i] != '\'') {
+                if (input.chars[i] != '\'') {
                     report_error("expected `'` after char", line);
                     i--;
                 }
@@ -149,12 +153,15 @@ ScanResult_t scan(char* input, size_t input_len) {
                 // check if c is numeric
                 if ('0' <= ch && ch <= '9') {
                     bool is_float = false;
-                    char* num_str = extract_num(input, input_len, &i, &is_float, line);
+                    char* num_str = extract_num(input, &i, &is_float, line);
 
                     Literal_t* lit = (Literal_t*)malloc(sizeof(Literal_t));
                     if (lit == NULL) {
                         report_error("malloc failed", line);
-                        return fail_result;
+                        return (ScanResult_t){
+                            .tokens = NULL,
+                            .len = 0,
+                        };
                     }
 
                     if (is_float) {
@@ -175,7 +182,7 @@ ScanResult_t scan(char* input, size_t input_len) {
 
                 // check if c is is alphabetic
                 if (('A' <= ch && ch <= 'Z') || ('a' <= ch && ch <= 'z')) {
-                    char* identifier = extract_identifier(input, input_len, &i, line);
+                    char* identifier = extract_identifier(input, &i, line);
                     push_token(&tokens, &t_len, &t_capacity, keyword_to_token(identifier, line));
 
                     i--;
@@ -196,12 +203,12 @@ ScanResult_t scan(char* input, size_t input_len) {
     return scan_result;
 }
 
-char peek_char(char* input, size_t input_len, size_t index) {
-    if (index >= input_len) {
-        return input[index];
+char peek_char(String_t input, size_t index) {
+    if (index >= input.len) {
+        return input.chars[index];
     }
 
-    return input[index + 1];
+    return input.chars[index + 1];
 }
 
 void push_token(Token_t** tokens, size_t* t_len, size_t* t_capacity, Token_t token) {
@@ -265,7 +272,7 @@ Token_t keyword_to_token(char* identifier, size_t line) {
     return new_token(TokenType_Identifier, line, lit);
 }
 
-char* extract_identifier(char* input, size_t input_len, size_t* index, size_t line) {
+char* extract_identifier(String_t input, size_t* index, size_t line) {
     char* ident = (char*)malloc(1 * sizeof(char));
     if (ident == NULL) {
         report_error("malloc failed", line);
@@ -276,14 +283,14 @@ char* extract_identifier(char* input, size_t input_len, size_t* index, size_t li
     size_t i_len = 0;
 
     while (
-        ('A' <= input[*index] && input[*index] <= 'Z') 
-        || ('a' <= input[*index] && input[*index] <= 'z')
-        || ('0' <= input[*index] && input[*index] <= '9')
-        || '_' == input[*index]
+        ('A' <= input.chars[*index] && input.chars[*index] <= 'Z') 
+        || ('a' <= input.chars[*index] && input.chars[*index] <= 'z')
+        || ('0' <= input.chars[*index] && input.chars[*index] <= '9')
+        || '_' == input.chars[*index]
     ) {
-        push((void**)&ident, &i_len, &i_capacity, sizeof(char), &input[*index]);
+        push((void**)&ident, &i_len, &i_capacity, sizeof(char), &input.chars[*index]);
         (*index)++;
-        if (*index >= input_len) {
+        if (*index >= input.len) {
             break;
         }
     }
@@ -294,7 +301,7 @@ char* extract_identifier(char* input, size_t input_len, size_t* index, size_t li
     return ident;
 }
 
-char* extract_num(char* input, size_t input_len, size_t* index, bool* is_float, size_t line) {
+char* extract_num(String_t input, size_t* index, bool* is_float, size_t line) {
     char* num = (char*)malloc(1 * sizeof(char));
     if (num == NULL) {
         report_error("malloc failed", line);
@@ -304,25 +311,25 @@ char* extract_num(char* input, size_t input_len, size_t* index, bool* is_float, 
     size_t n_capacity = 1;
     size_t n_len = 0;
 
-    while ('0' <= input[*index] && input[*index] <= '9') {
-        push((void**)&num, &n_len, &n_capacity, sizeof(char), &input[*index]);
+    while ('0' <= input.chars[*index] && input.chars[*index] <= '9') {
+        push((void**)&num, &n_len, &n_capacity, sizeof(char), &input.chars[*index]);
         (*index)++;
-        if (*index >= input_len) {
+        if (*index >= input.len) {
             break;
         }
     }
 
-    if (input[*index] == '.') {
+    if (input.chars[*index] == '.') {
         *is_float = true;
         (*index)++;
 
         char dot = '.';
         push((void**)&num, &n_len, &n_capacity, sizeof(char), &dot);
 
-        while ('0' <= input[*index] && input[*index] <= '9') {
-            push((void**)&num, &n_len, &n_capacity, sizeof(char), &input[*index]);
+        while ('0' <= input.chars[*index] && input.chars[*index] <= '9') {
+            push((void**)&num, &n_len, &n_capacity, sizeof(char), &input.chars[*index]);
             (*index)++;
-            if (*index >= input_len) {
+            if (*index >= input.len) {
                 break;
             }
         }
@@ -334,7 +341,7 @@ char* extract_num(char* input, size_t input_len, size_t* index, bool* is_float, 
     return num;
 }
 
-char* extract_string(char* input, size_t input_len, size_t* index, size_t line) {
+char* extract_string(String_t input, size_t* index, size_t line) {
     (*index)++;
 
     char* str = (char*)malloc(1 * sizeof(char));
@@ -346,10 +353,10 @@ char* extract_string(char* input, size_t input_len, size_t* index, size_t line) 
     size_t s_capacity = 1;
     size_t s_len = 0;
 
-    while (input[*index] != '"') {
-        push((void**)&str, &s_len, &s_capacity, sizeof(char), &input[*index]);
+    while (input.chars[*index] != '"') {
+        push((void**)&str, &s_len, &s_capacity, sizeof(char), &input.chars[*index]);
         (*index)++;
-        if (*index >= input_len) {
+        if (*index >= input.len) {
             report_error("expected `\"` after string", line);
             return "";
         }

@@ -11,11 +11,13 @@
 #include "token.h"
 #include "error.h"
 #include "parser.h"
+#include "string_utils.h"
 
 void print_literal(TokenType_t type, Literal_t* lit);
 void print_expression(Expression_t* expression);
 void print_help_menu(char* pathname);
-int compile_program(char* filename);
+int compile_program(char* filename, char* output_filename);
+int run_program(char* filename);
 
 int main(int argc, char* argv[]) {
     if (argc != 3) {
@@ -25,12 +27,14 @@ int main(int argc, char* argv[]) {
 
     init_error();
 
-    if (strcmp(argv[1], "compile") || strcmp(argv[1], "c")) {
-        return compile_program(argv[2]);
-    } else if (strcmp(argv[1], "compile") || strcmp(argv[1], "c")) {
-        printf("ToDo!");
-        return 1;
-    } else {
+    if (strcmp(argv[1], "compile") == 0 || strcmp(argv[1], "c") == 0) {
+        printf("%s\n", argv[1]);
+        return compile_program(argv[2], "out.cff");
+    } 
+    else if (strcmp(argv[1], "run") == 0 || strcmp(argv[1], "r") == 0) {
+        return run_program(argv[2]);
+    } 
+    else {
         print_help_menu(argv[0]);
         return 1;
     }
@@ -38,17 +42,17 @@ int main(int argc, char* argv[]) {
     return 0;
 }
 
-int compile_program(char* filename) {
+int compile_program(char* filename, char* output_filename) {
     // reading the file
-    char* file = read_file_to_string(filename);
-    if (file == NULL) {
+    String_t file = read_file_to_string(filename);
+    if (file.chars == NULL) {
         printf("Error reading file!\n");
         return 1;
     }
 
     // scanning tokens
     printf("tokens:\n");
-    ScanResult_t tokens = scan(file, strlen(file));
+    ScanResult_t tokens = scan(file);
 
     if (had_error()) {
         print_errors();
@@ -96,13 +100,38 @@ int compile_program(char* filename) {
     printf("\n");
 
     // emmitter
-    emit(&bytecode, "out.cff");
+    emit(&bytecode, output_filename);
     if (had_error()) {
         print_errors();
         free_error();
         return 1;
     }
 
+    // freeing data
+    free(file.chars);
+    free_error();
+    free_tokens(tokens);
+    free_expression(expr);
+    free(expr);
+    free(bytecode.chunks);
+
+    return 0;
+}
+
+int run_program(char* filename) {
+    // read file
+    String_t file = read_file_to_string(filename);
+    if (file.chars == NULL) {
+        printf("Error reading file!\n");
+        return 1;
+    }
+    unsigned char* data = (unsigned char*)file.chars;
+
+    // print read file
+    for (size_t i = 0; i < file.len; i++) {
+        printf("%02x ", data[i]);
+    }
+    printf("\n");
 
     /* extract number back from bytes, may need it later
     long num = 0;
@@ -111,16 +140,6 @@ int compile_program(char* filename) {
     }
     printf("%ld\n", num);
     */
-
-    // freeing data
-    free(file);
-    free_error();
-    free_tokens(tokens);
-    free_expression(expr);
-    free(expr);
-    free(bytecode.chunks);
-
-    return 0;
 }
 
 void print_literal(TokenType_t type, Literal_t* lit) {

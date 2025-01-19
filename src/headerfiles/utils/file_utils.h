@@ -8,6 +8,8 @@
 #ifndef FILE_UTILS_H
 #define FILE_UTILS_H
 
-char* read_file_to_string(char* filename);
+#include "string_utils.h"
+
+String_t read_file_to_string(char* filename);
 
 #endif // FILE_UTILS_H

@@ -14,31 +14,34 @@ void compile_expression(Compiler_t* compiler, Expression_t* expr);
 
 void compile_literal(Compiler_t* compiler, EV_Literal_t* literal) {
     // INSTR MOV
-    Instruction_t instr = Instruction_Mov;
-    push_chunk(&compiler->bytecode, (void*)(&instr), sizeof(Instruction_t));
+    push_chunk(
+        &compiler->bytecode,
+        (void*)(&(Instruction_t){Instruction_Mov}),
+        sizeof(Instruction_t)
+    );
     // ARG1
     push_chunk(&compiler->bytecode, (void*)(&compiler->stack_pointer), sizeof(size_t));
     // ADR2
-    AddressingMode_t adr = AddressingMode_Direct;
-    push_chunk(&compiler->bytecode, (void*)(&adr), sizeof(AddressingMode_t));
+    push_chunk(
+        &compiler->bytecode,
+        (void*)(&(AddressingMode_t){AddressingMode_Direct}),
+        sizeof(AddressingMode_t)
+    );
     // ARG2
     push_chunk(&compiler->bytecode, (void*)literal->value, sizeof(literal));
 }
 
 void compile_unary(Compiler_t* compiler, EV_Unary_t* unary, size_t line) {
     // compile the operant
-    compiler->stack_pointer++;
     compile_expression(compiler, &unary->operant);
-    compiler->stack_pointer--;
 
     // INSTR
     Instruction_t instr;
     switch (unary->operator) {
         case TokenType_Minus:
-            instr = Instruction_Neg;
+            instr = Instruction_NegI;
             break;
         case TokenType_Bang:
-            // TODO: change this to be an xor with 1 when more logic is implemented
             instr = Instruction_Not;
             break;
         default:
@@ -46,15 +49,9 @@ void compile_unary(Compiler_t* compiler, EV_Unary_t* unary, size_t line) {
             break;
     }
     push_chunk(&compiler->bytecode, (void*)(&instr), sizeof(Instruction_t));
+
     // ARG1
     push_chunk(&compiler->bytecode, (void*)(&compiler->stack_pointer), sizeof(size_t));
-    // ADR2
-    AddressingMode_t adr = AddressingMode_Indirect;
-    push_chunk(&compiler->bytecode, (void*)(&adr), sizeof(AddressingMode_t));
-    // ARG2
-    compiler->stack_pointer++;
-    push_chunk(&compiler->bytecode, (void*)(&compiler->stack_pointer), sizeof(size_t));
-    compiler->stack_pointer--;
 }
 
 void compile_binary(Compiler_t* compiler, EV_Binary_t* bin, size_t line) {
@@ -68,16 +65,16 @@ void compile_binary(Compiler_t* compiler, EV_Binary_t* bin, size_t line) {
     Instruction_t instr;
     switch (bin->operator.type) {
         case TokenType_Minus:
-            instr = Instruction_Sub;
+            instr = Instruction_SubI;
             break;
         case TokenType_Plus:
-            instr = Instruction_Add;
+            instr = Instruction_AddI;
             break;
         case TokenType_Slash:
-            instr = Instruction_Div;
+            instr = Instruction_DivI;
             break;
         case TokenType_Star:
-            instr = Instruction_Mul;
+            instr = Instruction_MulI;
             break;
         default:
             report_error("unexpected token in a binary", line);
@@ -87,8 +84,11 @@ void compile_binary(Compiler_t* compiler, EV_Binary_t* bin, size_t line) {
     // ARG1
     push_chunk(&compiler->bytecode, (void*)(&compiler->stack_pointer), sizeof(size_t));
     // ADR2
-    AddressingMode_t adr = AddressingMode_Indirect;
-    push_chunk(&compiler->bytecode, (void*)(&adr), sizeof(AddressingMode_t));
+    push_chunk(
+        &compiler->bytecode,
+        (void*)(&(AddressingMode_t){AddressingMode_Indirect}),
+        sizeof(AddressingMode_t)
+    );
     // ARG2
     compiler->stack_pointer++;
     push_chunk(&compiler->bytecode, (void*)(&compiler->stack_pointer), sizeof(size_t));

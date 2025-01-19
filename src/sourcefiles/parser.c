@@ -6,7 +6,7 @@
 #include "error.h"
 
 /*
- * | primary V+TODO
+ * | primary V
  * |
  * | unary V
  * |
@@ -60,8 +60,6 @@ Expression_t* parse_primary(Token_t* tokens, size_t len, size_t* index) {
             advance(len, index);
             break;
         case TokenType_LeftParen:
-            printf("DEBUG\n");
-            // TODO: change when more of the parser is implemented
             advance(len, index);
             Expression_t* expr = parse_term(tokens, len, index);
 
