@@ -9,6 +9,10 @@ int exec_instr(Instruction_t instr, Interpreter_t* inter);
 int64_t read_number(Interpreter_t* inter);
 AddressingMode_t read_addressing_mode(Interpreter_t* inter);
 int set_stack(Stack_t* stack, size_t index, int64_t element);
+int64_t get_elem(Interpreter_t* inter, int64_t pos);
+int exec_binary(
+    Interpreter_t* inter, int64_t (*operation)(int64_t, int64_t) // higher order function
+);
 
 Interpreter_t new_interpreter(unsigned char* code, size_t len) {
     Stack_t stack = {
@@ -33,52 +37,53 @@ int interpret(Interpreter_t interpreter) {
 
     printf("stack:\n");
     for (int i = 0; i < interpreter.stack.capacity; i++) {
-        printf("  %ld,\n", interpreter.stack.data[i]);
+        printf("  %lld,\n", interpreter.stack.data[i]);
     }
 
     return 0;
 }
 
+// arguments for the exec_binary function
+int64_t add_i(int64_t n1, int64_t n2) { return n1 + n2; }
+int64_t sub_i(int64_t n1, int64_t n2) { return n1 - n2; }
+int64_t mul_i(int64_t n1, int64_t n2) { return n1 * n2; }
+int64_t div_i(int64_t n1, int64_t n2) { return n1 / n2; }
+
 int exec_instr(Instruction_t instr, Interpreter_t* inter) {
     switch (instr) {
+        case Instruction_AddI: {
+            int res = exec_binary(inter, add_i);
+            if (res == 1) { return res; }
+            break;
+        }
+        case Instruction_DivI: {
+            int res = exec_binary(inter, div_i);
+            if (res == 1) { return res; }
+            break;
+        }
         case Instruction_Mov: {
             int64_t op1 = read_number(inter);
             AddressingMode_t adr2 = read_addressing_mode(inter);
             int64_t op2 = read_number(inter);
 
+            int64_t num;
             switch (adr2) {
-                case AddressingMode_Direct: {
-                    int res = set_stack(&inter->stack, (size_t)op1, op2);
-                    if (res == 1) { return res; }
-                    break;
-                }
-                case AddressingMode_Indirect: {
-                    int res = set_stack(&inter->stack, (size_t)op1, inter->stack.data[(size_t)op2]);
-                    if (res == 1) { return res; }
-                    break;
-                }
+                case AddressingMode_Direct: num = op2; break;
+                case AddressingMode_Indirect: num = get_elem(inter, op2); break;
+                default: printf("(unreachable) unkown addressing mode!\n"); return 1; break;
             }
+            int res = set_stack(&inter->stack, (size_t)op1, num);
+            if (res == 1) { return res; }
             break;
         }
         case Instruction_MulI: {
-            int64_t op1 = read_number(inter);
-            AddressingMode_t adr2 = read_addressing_mode(inter);
-            int64_t op2 = read_number(inter);
-
-            switch (adr2) {
-                case AddressingMode_Direct: {
-                    int64_t num = inter->stack.data[(size_t)op1] * op2;
-                    int res = set_stack(&inter->stack, (size_t)op1, num);
-                    if (res == 1) { return res; }
-                    break;
-                }
-                case AddressingMode_Indirect: {
-                    int64_t num = inter->stack.data[(size_t)op1] * inter->stack.data[(size_t)op2];
-                    int res = set_stack(&inter->stack, (size_t)op1, num);
-                    if (res == 1) { return res; }
-                    break;
-                }
-            }
+            int res = exec_binary(inter, mul_i);
+            if (res == 1) { return res; }
+            break;
+        }
+        case Instruction_SubI: {
+            int res = exec_binary(inter, sub_i);
+            if (res == 1) { return res; }
             break;
         }
         default:
@@ -86,6 +91,24 @@ int exec_instr(Instruction_t instr, Interpreter_t* inter) {
             return 1;
             break;
     }
+    return 0;
+}
+
+int exec_binary(
+    Interpreter_t* inter, int64_t (*operation)(int64_t, int64_t) // higher order function
+) {
+    int64_t op1 = read_number(inter);
+    AddressingMode_t adr2 = read_addressing_mode(inter);
+    int64_t op2 = read_number(inter);
+
+    int64_t num;
+    switch (adr2) {
+        case AddressingMode_Direct: num = operation(get_elem(inter, op1), op2); break;
+        case AddressingMode_Indirect: num = operation(get_elem(inter, op1), get_elem(inter, op2)); break;
+        default: printf("(unreachable) unkown addressing mode!\n"); return 1; break;
+    }
+    int res = set_stack(&inter->stack, (size_t)op1, num);
+    return res;
 }
 
 int64_t read_number(Interpreter_t* inter) {
@@ -113,6 +136,10 @@ Instruction_t read_instruction(Interpreter_t* inter) {
     }
     inter->instr_ptr += sizeof(Instruction_t);
     return (Instruction_t)instruction;
+}
+
+int64_t get_elem(Interpreter_t* inter, int64_t pos) {
+    return inter->stack.data[(size_t)pos];
 }
 
 int set_stack(Stack_t* stack, size_t index, int64_t element) {
