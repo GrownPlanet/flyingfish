@@ -177,7 +177,7 @@ run, r\n");
 
 void print_expression(Expression_t* expr) {
     switch (expr->type) {
-        case ExpressionType_Literal:
+        case ExpressionType_Literal: {
             EV_Literal_t* lit = expr->value.literal;
             printf("(");
             print_token_type(lit->type);
@@ -185,7 +185,8 @@ void print_expression(Expression_t* expr) {
             print_literal(lit->type, lit->value);
             printf(")");
             break;
-        case ExpressionType_Unary:
+        }
+        case ExpressionType_Unary: {
             EV_Unary_t* un = expr->value.unary;
             printf("(");
             print_token_type(un->operator);
@@ -193,7 +194,8 @@ void print_expression(Expression_t* expr) {
             print_expression(&un->operant);
             printf(")");
             break;
-        case ExpressionType_Binary:
+        }
+        case ExpressionType_Binary: {
             EV_Binary_t* bin = expr->value.binary;
             printf("(");
             print_expression(&bin->left);
@@ -203,5 +205,6 @@ void print_expression(Expression_t* expr) {
             print_expression(&bin->right);
             printf(")");
             break;
+        }
     }
 }

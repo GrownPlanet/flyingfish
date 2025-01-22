@@ -36,8 +36,8 @@ int interpret(Interpreter_t interpreter) {
     }
 
     printf("stack:\n");
-    for (int i = 0; i < interpreter.stack.capacity; i++) {
-        printf("  %lld,\n", interpreter.stack.data[i]);
+    for (size_t i = 0; i < interpreter.stack.capacity; i++) {
+        printf("  %ld,\n", interpreter.stack.data[i]);
     }
 
     return 0;
@@ -143,7 +143,7 @@ int64_t get_elem(Interpreter_t* inter, int64_t pos) {
 }
 
 int set_stack(Stack_t* stack, size_t index, int64_t element) {
-    if (index >= stack->capacity) {
+    while (index >= stack->capacity) {
         stack->capacity *= 2;
         stack->data = realloc(stack->data, stack->capacity * sizeof(int64_t));
 
