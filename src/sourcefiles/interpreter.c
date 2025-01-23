@@ -37,7 +37,7 @@ int interpret(Interpreter_t interpreter) {
 
     printf("stack:\n");
     for (size_t i = 0; i < interpreter.stack.capacity; i++) {
-        printf("  %ld,\n", interpreter.stack.data[i]);
+        printf("  %f,\n", (double)interpreter.stack.data[i]);
     }
 
     return 0;

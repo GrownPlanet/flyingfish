@@ -50,35 +50,7 @@ ScanResult_t scan(String_t input) {
                 push_token(&tokens, &t_len, &t_capacity, new_token(TokenType_Plus, line, NULL));
                 break;
             case '-':
-                ch = peek_char(input, i);
-                if ('0' <= ch && ch <= '9') {
-                    i++;
-                    bool is_float = false;
-                    char* num_str = extract_num(input, &i, &is_float, line);
-
-                    Literal_t* lit = (Literal_t*)malloc(sizeof(Literal_t));
-                    if (lit == NULL) {
-                        report_error("malloc failed", line);
-                        return (ScanResult_t){
-                            .tokens = NULL,
-                            .len = 0,
-                        };
-                    }
-
-                    if (is_float) {
-                        lit->db = 0.0 - strtod(num_str, NULL);
-                        push_token(&tokens, &t_len, &t_capacity, new_token(TokenType_FloatV, line, lit));
-                    } else {
-                        lit->ln = 0 - atol(num_str);
-                        push_token(&tokens, &t_len, &t_capacity, new_token(TokenType_IntV, line, lit));
-                    }
-
-                    free(num_str);
-
-                    i--;
-                } else {
-                    push_token(&tokens, &t_len, &t_capacity, new_token(TokenType_Minus, line, NULL));
-                }
+                push_token(&tokens, &t_len, &t_capacity, new_token(TokenType_Minus, line, NULL));
                 break;
             case '*':
                 push_token(&tokens, &t_len, &t_capacity, new_token(TokenType_Star, line, NULL));

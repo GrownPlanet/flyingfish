@@ -10,6 +10,9 @@ typedef struct {
     size_t stack_pointer;
 } Compiler_t;
 
+// TODO: add support for floats!
+// => float and int bits in a union (Literal_t)
+
 void compile_expression(Compiler_t* compiler, Expression_t* expr);
 
 void compile_literal(Compiler_t* compiler, EV_Literal_t* literal) {
@@ -38,11 +41,11 @@ void compile_unary(Compiler_t* compiler, EV_Unary_t* unary, size_t line) {
     // INSTR
     Instruction_t instr;
     switch (unary->operator) {
-        case TokenType_Minus:
-            instr = Instruction_NegI;
+        case TokenType_Minus: 
+            instr = Instruction_NegI; 
             break;
-        case TokenType_Bang:
-            instr = Instruction_Not;
+        case TokenType_Bang: 
+            instr = Instruction_Not; 
             break;
         default:
             report_error("unexpected token in a unary", line);
