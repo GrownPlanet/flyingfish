@@ -29,7 +29,6 @@ int main(int argc, char* argv[]) {
     init_error();
 
     if (strcmp(argv[1], "compile") == 0 || strcmp(argv[1], "c") == 0) {
-        printf("%s\n", argv[1]);
         return compile_program(argv[2], "out.cff");
     } 
     else if (strcmp(argv[1], "run") == 0 || strcmp(argv[1], "r") == 0) {
@@ -39,8 +38,6 @@ int main(int argc, char* argv[]) {
         print_help_menu(argv[0]);
         return 1;
     }
-
-    return 0;
 }
 
 int compile_program(char* filename, char* output_filename) {

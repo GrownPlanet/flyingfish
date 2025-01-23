@@ -28,7 +28,7 @@ void compile_literal(Compiler_t* compiler, EV_Literal_t* literal) {
         sizeof(AddressingMode_t)
     );
     // ARG2
-    push_chunk(&compiler->bytecode, (void*)literal->value, sizeof(literal));
+    push_chunk(&compiler->bytecode, (void*)literal->value, sizeof(literal->value));
 }
 
 void compile_unary(Compiler_t* compiler, EV_Unary_t* unary, size_t line) {

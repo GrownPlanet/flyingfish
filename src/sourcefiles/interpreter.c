@@ -81,6 +81,12 @@ int exec_instr(Instruction_t instr, Interpreter_t* inter) {
             if (res == 1) { return res; }
             break;
         }
+        case Instruction_NegI: {
+            int64_t op1 = read_number(inter);
+            int res = set_stack(&inter->stack, (size_t)op1, -get_elem(inter, op1));
+            if (res == 1) { return res; }
+            break;
+        }
         case Instruction_SubI: {
             int res = exec_binary(inter, sub_i);
             if (res == 1) { return res; }
@@ -114,7 +120,7 @@ int exec_binary(
 int64_t read_number(Interpreter_t* inter) {
     int64_t num = 0;
     for (size_t i = 0; i < sizeof(int64_t); i++) {
-        num = num | (inter->code[inter->instr_ptr  + i] << (i * 8));
+        num = num | ((int64_t)inter->code[inter->instr_ptr + i] << (i * 8));
     }
     inter->instr_ptr += sizeof(int64_t);
     return num;
