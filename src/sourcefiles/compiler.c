@@ -13,7 +13,8 @@ typedef struct {
 // TODO: add support for floats!
 // => float and int bits in a union (Literal_t)
 
-void compile_expression(Compiler_t* compiler, Expression_t* expr);
+int compile_expression(Compiler_t* compiler, Expression_t* expr);
+TokenType_t get_type(Expression_t* expr);
 
 void compile_literal(Compiler_t* compiler, EV_Literal_t* literal) {
     // INSTR MOV
@@ -31,10 +32,10 @@ void compile_literal(Compiler_t* compiler, EV_Literal_t* literal) {
         sizeof(AddressingMode_t)
     );
     // ARG2
-    push_chunk(&compiler->bytecode, (void*)literal->value, sizeof(literal->value));
+    push_chunk(&compiler->bytecode, (void*)literal->value, sizeof(Literal_t));
 }
 
-void compile_unary(Compiler_t* compiler, EV_Unary_t* unary, size_t line) {
+int compile_unary(Compiler_t* compiler, EV_Unary_t* unary, size_t line) {
     // compile the operant
     compile_expression(compiler, &unary->operant);
 
@@ -42,7 +43,7 @@ void compile_unary(Compiler_t* compiler, EV_Unary_t* unary, size_t line) {
     Instruction_t instr;
     switch (unary->operator) {
         case TokenType_Minus: 
-            instr = Instruction_NegI; 
+            instr = Instruction_Neg;
             break;
         case TokenType_Bang: 
             instr = Instruction_Not; 
@@ -53,11 +54,18 @@ void compile_unary(Compiler_t* compiler, EV_Unary_t* unary, size_t line) {
     }
     push_chunk(&compiler->bytecode, (void*)(&instr), sizeof(Instruction_t));
 
+    // T
+    TokenType_t t = get_type(&unary->operant);
+    if (t == -1) { return t; }
+    push_chunk(&compiler->bytecode, (void*)(&t), sizeof(TokenType_t));
+
     // ARG1
     push_chunk(&compiler->bytecode, (void*)(&compiler->stack_pointer), sizeof(size_t));
+
+    return 0;
 }
 
-void compile_binary(Compiler_t* compiler, EV_Binary_t* bin, size_t line) {
+int compile_binary(Compiler_t* compiler, EV_Binary_t* bin, size_t line) {
     // compile the operants
     compile_expression(compiler, &bin->left);
     compiler->stack_pointer++;
@@ -68,37 +76,54 @@ void compile_binary(Compiler_t* compiler, EV_Binary_t* bin, size_t line) {
     Instruction_t instr;
     switch (bin->operator.type) {
         case TokenType_Minus:
-            instr = Instruction_SubI;
+            instr = Instruction_Sub;
             break;
         case TokenType_Plus:
-            instr = Instruction_AddI;
+            instr = Instruction_Add;
             break;
         case TokenType_Slash:
-            instr = Instruction_DivI;
+            instr = Instruction_Div;
             break;
         case TokenType_Star:
-            instr = Instruction_MulI;
+            instr = Instruction_Mul;
             break;
         default:
             report_error("unexpected token in a binary", line);
             break;
     }
     push_chunk(&compiler->bytecode, (void*)(&instr), sizeof(Instruction_t));
+
+    // T
+    TokenType_t t1 = get_type(&bin->left);
+    if (t1 == -1) { return t1; }
+    TokenType_t t2 = get_type(&bin->right);
+    if (t2 == -1) { return t2; }
+
+    if (t1 != t2) {
+        printf("Type Error: binary type 1 (= %d) != type 2 (= %d)\n", t1, t2);
+        return -1;
+    }
+    push_chunk(&compiler->bytecode, (void*)(&t1), sizeof(TokenType_t));
+
     // ARG1
     push_chunk(&compiler->bytecode, (void*)(&compiler->stack_pointer), sizeof(size_t));
+
     // ADR2
     push_chunk(
         &compiler->bytecode,
         (void*)(&(AddressingMode_t){AddressingMode_Indirect}),
         sizeof(AddressingMode_t)
     );
+
     // ARG2
     compiler->stack_pointer++;
     push_chunk(&compiler->bytecode, (void*)(&compiler->stack_pointer), sizeof(size_t));
     compiler->stack_pointer--;
+
+    return 0;
 }
 
-void compile_expression(Compiler_t* compiler, Expression_t* expr) {
+int compile_expression(Compiler_t* compiler, Expression_t* expr) {
     switch (expr->type) {
         case ExpressionType_Literal:
             compile_literal(compiler, expr->value.literal);
@@ -111,9 +136,9 @@ void compile_expression(Compiler_t* compiler, Expression_t* expr) {
             break;
         default:
             printf("TODO 01: handle more expression types: compiler.c\n");
-            exit(1);
-            break;
+            return 1;
     }
+    return 0;
 }
 
 ByteCode_t compile(Expression_t* expr) {
@@ -132,4 +157,25 @@ ByteCode_t compile(Expression_t* expr) {
     compile_expression(&compiler, expr);
 
     return compiler.bytecode;
+}
+
+TokenType_t get_type(Expression_t* expr) {
+    switch (expr->type) {
+        case ExpressionType_Binary: {
+            TokenType_t t1 = get_type(&expr->value.binary->left);
+            TokenType_t t2 = get_type(&expr->value.binary->right);
+            if (t1 == t2) {
+                return t1;
+            } else {
+                printf("Type error: type 1 (= %d) != type 2 (= %d)\n", t1, t2);
+                return -1;
+            }
+        }
+        case ExpressionType_Unary: {
+            return get_type(&expr->value.unary->operant);
+        }
+        case ExpressionType_Literal: {
+            return expr->value.literal->type;
+        }
+    }
 }

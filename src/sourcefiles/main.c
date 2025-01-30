@@ -144,17 +144,17 @@ int run_program(char* filename) {
 void print_literal(TokenType_t type, Literal_t* lit) {
     switch (type) {
         case TokenType_IntV:
-            printf("%ld", lit->ln);
+            printf("%ld", lit->i);
             break;
         case TokenType_FloatV:
-            printf("%f", lit->db);
+            printf("%f", lit->f);
             break;
         case TokenType_Identifier:
         case TokenType_StringV:
-            printf("\"%s\"", lit->str);
+            printf("\"%s\"", lit->s);
             break;
         case TokenType_CharV:
-            printf("'%c'", lit->ch);
+            printf("'%c'", lit->c);
             break;
         case TokenType_BoolV:
             printf("%s", lit->b ? "true" : "false");

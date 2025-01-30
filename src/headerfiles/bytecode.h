@@ -11,20 +11,15 @@
 #include <stdlib.h>
 
 typedef enum {
-    Instruction_AddI,
-    Instruction_AddF,
+    Instruction_Add,
     Instruction_And,
-    Instruction_DivI,
-    Instruction_DivF,
+    Instruction_Div,
     Instruction_Mov,
-    Instruction_MulI,
-    Instruction_MulF,
-    Instruction_NegI,
-    Instruction_NegF,
+    Instruction_Mul,
+    Instruction_Neg,
     Instruction_Not,
     Instruction_Or,
-    Instruction_SubI,
-    Instruction_SubF,
+    Instruction_Sub,
     Instruction_Xor,
 } Instruction_t;
 

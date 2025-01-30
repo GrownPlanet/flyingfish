@@ -5,6 +5,9 @@
  *
  */
 
+// TODO:
+// - add type to each expression for earlier type checking?
+
 #ifndef EXPRESSION_H
 #define EXPRESSION_H
 

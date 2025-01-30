@@ -5,13 +5,16 @@
  *
  * */
 
+// TODO: add support for 32-bit sytems (automatically??)
+
 #ifndef INTERPRETER_H
 #define INTERPRETER_H
 
 #include "bytecode.h"
+#include "token.h"
 
 typedef struct {
-    int64_t* data;
+    Literal_t* data;
     size_t capacity;
 } Stack_t;
 

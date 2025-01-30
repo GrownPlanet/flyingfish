@@ -117,7 +117,7 @@ ScanResult_t scan(String_t input) {
                     };
                 }
 
-                lit->str = str;
+                lit->s = str;
                 push_token(&tokens, &t_len, &t_capacity, new_token(TokenType_StringV, line, lit));
                 break;
             }
@@ -132,7 +132,7 @@ ScanResult_t scan(String_t input) {
                     };
                 }
 
-                lit->ch = input.chars[i];
+                lit->c = input.chars[i];
                 push_token(&tokens, &t_len, &t_capacity, new_token(TokenType_CharV, line, lit));
 
                 i++;
@@ -165,10 +165,10 @@ ScanResult_t scan(String_t input) {
                     }
 
                     if (is_float) {
-                        lit->db = strtod(num_str, NULL);
+                        lit->f = strtod(num_str, NULL);
                         push_token(&tokens, &t_len, &t_capacity, new_token(TokenType_FloatV, line, lit));
                     } else {
-                        lit->ln = atol(num_str);
+                        lit->i = atol(num_str);
                         push_token(&tokens, &t_len, &t_capacity, new_token(TokenType_IntV, line, lit));
                     }
 
@@ -267,7 +267,7 @@ Token_t keyword_to_token(char* identifier, size_t line) {
         return new_token(TokenType_BoolV, line, lit);
     }
 
-    lit->str = identifier;
+    lit->s = identifier;
     return new_token(TokenType_Identifier, line, lit);
 }
 
@@ -371,7 +371,7 @@ void free_tokens(ScanResult_t tokens) {
     for (size_t i = 0; i < tokens.len; i++) {
         Token_t token = tokens.tokens[i];
         if (token.type == TokenType_StringV || token.type == TokenType_Identifier) {
-            free(token.literal->str);
+            free(token.literal->s);
         }
         free(token.literal);
     }

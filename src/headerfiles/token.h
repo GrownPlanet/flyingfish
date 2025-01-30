@@ -33,10 +33,10 @@ typedef enum {
 } TokenType_t;
 
 typedef union {
-    int64_t ln;
-    double db;
-    char* str;
-    char ch;
+    int64_t i;
+    double f;
+    char* s;
+    char c;
     bool b;
 } Literal_t;
 

@@ -5,6 +5,9 @@
  *
  * */
 
+// TODO:
+// - add flags for type, addressing mode instead of 4 byte numbers for each :/
+
 #ifndef COMPILER_H
 #define COMPILER_H
 

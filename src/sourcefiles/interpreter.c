@@ -3,20 +3,22 @@
 
 #include "interpreter.h"
 #include "bytecode.h"
+#include "token.h"
 
 Instruction_t read_instruction(Interpreter_t* inter);
 int exec_instr(Instruction_t instr, Interpreter_t* inter);
-int64_t read_number(Interpreter_t* inter);
+Literal_t read_number(Interpreter_t* inter);
 AddressingMode_t read_addressing_mode(Interpreter_t* inter);
-int set_stack(Stack_t* stack, size_t index, int64_t element);
-int64_t get_elem(Interpreter_t* inter, int64_t pos);
+TokenType_t read_type(Interpreter_t* inter);
+int set_stack(Stack_t* stack, size_t index, Literal_t element);
+Literal_t get_elem(Interpreter_t* inter, Literal_t pos);
 int exec_binary(
-    Interpreter_t* inter, int64_t (*operation)(int64_t, int64_t) // higher order function
+    Interpreter_t* inter, Literal_t (*operation)(Literal_t, Literal_t) // higher order function
 );
 
 Interpreter_t new_interpreter(unsigned char* code, size_t len) {
     Stack_t stack = {
-        .data = (int64_t*)malloc(sizeof(int64_t)),
+        .data = (Literal_t*)malloc(sizeof(Literal_t)),
         .capacity = 1,
     };
 
@@ -37,57 +39,69 @@ int interpret(Interpreter_t interpreter) {
 
     printf("stack:\n");
     for (size_t i = 0; i < interpreter.stack.capacity; i++) {
-        printf("  %f,\n", (double)interpreter.stack.data[i]);
+        printf("  %llx; %f,\n", interpreter.stack.data[i], interpreter.stack.data[i]);
     }
 
     return 0;
 }
 
 // arguments for the exec_binary function
-int64_t add_i(int64_t n1, int64_t n2) { return n1 + n2; }
-int64_t sub_i(int64_t n1, int64_t n2) { return n1 - n2; }
-int64_t mul_i(int64_t n1, int64_t n2) { return n1 * n2; }
-int64_t div_i(int64_t n1, int64_t n2) { return n1 / n2; }
+Literal_t add_i(Literal_t n1, Literal_t n2) { return n1 + n2; }
+Literal_t sub_i(Literal_t n1, Literal_t n2) { return n1 - n2; }
+Literal_t mul_i(Literal_t n1, Literal_t n2) { return n1 * n2; }
+Literal_t div_i(Literal_t n1, Literal_t n2) { return n1 / n2; }
 
 int exec_instr(Instruction_t instr, Interpreter_t* inter) {
     switch (instr) {
-        case Instruction_AddI: {
+        case Instruction_Add: {
             int res = exec_binary(inter, add_i);
             if (res == 1) { return res; }
             break;
         }
-        case Instruction_DivI: {
+        case Instruction_Div: {
             int res = exec_binary(inter, div_i);
             if (res == 1) { return res; }
             break;
         }
         case Instruction_Mov: {
-            int64_t op1 = read_number(inter);
+            Literal_t op1 = read_number(inter);
             AddressingMode_t adr2 = read_addressing_mode(inter);
-            int64_t op2 = read_number(inter);
+            Literal_t op2 = read_number(inter);
 
-            int64_t num;
+            Literal_t num;
             switch (adr2) {
-                case AddressingMode_Direct: num = op2; break;
-                case AddressingMode_Indirect: num = get_elem(inter, op2); break;
+                case AddressingMode_Direct:   num = op2; break;
+                case AddressingMode_Indirect: num = get_elem(inter, op2.i); break;
                 default: printf("(unreachable) unkown addressing mode!\n"); return 1; break;
             }
             int res = set_stack(&inter->stack, (size_t)op1, num);
             if (res == 1) { return res; }
             break;
         }
-        case Instruction_MulI: {
+        case Instruction_Mul: {
             int res = exec_binary(inter, mul_i);
             if (res == 1) { return res; }
             break;
         }
-        case Instruction_NegI: {
-            int64_t op1 = read_number(inter);
-            int res = set_stack(&inter->stack, (size_t)op1, -get_elem(inter, op1));
+        case Instruction_Neg: {
+            Literal_t op1 = read_number(inter);
+            TokenType_t t = read_type(inter);
+            Literal_t n;
+            switch (t) {
+                case TokenType_IntT: {
+                    n = -get_elem(inter, op1).i;
+                    break;
+                }
+                case TokenType_FloatT: {
+                    n = -get_elem(inter, op1).f;
+                    break;
+                }
+            }
+            int res = set_stack(&inter->stack, (size_t)op1.i, n);
             if (res == 1) { return res; }
             break;
         }
-        case Instruction_SubI: {
+        case Instruction_Sub: {
             int res = exec_binary(inter, sub_i);
             if (res == 1) { return res; }
             break;
@@ -101,29 +115,29 @@ int exec_instr(Instruction_t instr, Interpreter_t* inter) {
 }
 
 int exec_binary(
-    Interpreter_t* inter, int64_t (*operation)(int64_t, int64_t) // higher order function
+    Interpreter_t* inter, Literal_t (*operation)(Literal_t, Literal_t) // higher order function
 ) {
-    int64_t op1 = read_number(inter);
+    Literal_t op1 = read_number(inter).i;
     AddressingMode_t adr2 = read_addressing_mode(inter);
-    int64_t op2 = read_number(inter);
+    Literal_t op2 = read_number(inter).i;
 
-    int64_t num;
+    Literal_t num;
     switch (adr2) {
-        case AddressingMode_Direct: num = operation(get_elem(inter, op1), op2); break;
-        case AddressingMode_Indirect: num = operation(get_elem(inter, op1), get_elem(inter, op2)); break;
+        case AddressingMode_Direct: num = operation(get_elem(inter, op1).i, op2); break;
+        case AddressingMode_Indirect: num = operation(get_elem(inter, op1).i, get_elem(inter, op2).i); break;
         default: printf("(unreachable) unkown addressing mode!\n"); return 1; break;
     }
     int res = set_stack(&inter->stack, (size_t)op1, num);
     return res;
 }
 
-int64_t read_number(Interpreter_t* inter) {
-    int64_t num = 0;
-    for (size_t i = 0; i < sizeof(int64_t); i++) {
-        num = num | ((int64_t)inter->code[inter->instr_ptr + i] << (i * 8));
+Literal_t read_number(Interpreter_t* inter) {
+    Literal_t num = 0;
+    for (size_t i = 0; i < sizeof(Literal_t); i++) {
+        num = num | ((Literal_t)inter->code[inter->instr_ptr + i] << (i * 8));
     }
-    inter->instr_ptr += sizeof(int64_t);
-    return num;
+    inter->instr_ptr += sizeof(Literal_t);
+    return (Literal_t){num};
 }
 
 AddressingMode_t read_addressing_mode(Interpreter_t* inter) {
@@ -135,6 +149,15 @@ AddressingMode_t read_addressing_mode(Interpreter_t* inter) {
     return (AddressingMode_t)adrm;
 }
 
+TokenType_t read_type(Interpreter_t* inter) {
+    int t = 0;
+    for (size_t i = 0; i < sizeof(TokenType_t); i++) {
+        t = t | (inter->code[inter->instr_ptr  + i] << (i * 8));
+    }
+    inter->instr_ptr += sizeof(TokenType_t);
+    return (TokenType_t)t;
+}
+
 Instruction_t read_instruction(Interpreter_t* inter) {
     int instruction = 0;
     for (size_t i = 0; i < sizeof(Instruction_t); i++) {
@@ -144,14 +167,14 @@ Instruction_t read_instruction(Interpreter_t* inter) {
     return (Instruction_t)instruction;
 }
 
-int64_t get_elem(Interpreter_t* inter, int64_t pos) {
+Literal_t get_elem(Interpreter_t* inter, Literal_t pos) {
     return inter->stack.data[(size_t)pos];
 }
 
-int set_stack(Stack_t* stack, size_t index, int64_t element) {
+int set_stack(Stack_t* stack, size_t index, Literal_t element) {
     while (index >= stack->capacity) {
         stack->capacity *= 2;
-        stack->data = realloc(stack->data, stack->capacity * sizeof(int64_t));
+        stack->data = realloc(stack->data, stack->capacity * sizeof(Literal_t));
 
         if (stack->data == NULL) {
             printf("Realloc failed!\n");
