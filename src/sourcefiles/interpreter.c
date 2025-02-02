@@ -47,19 +47,15 @@ int interpret(Interpreter_t interpreter) {
 }
 
 // arguments for the exec_binary function
-Literal_t add_i(Literal_t n1, Literal_t n2) { return (Literal_t) { n1.i + n2.i }; }
-Literal_t sub_i(Literal_t n1, Literal_t n2) { return (Literal_t) { n1.i - n2.i }; }
-Literal_t mul_i(Literal_t n1, Literal_t n2) { return (Literal_t) { n1.i * n2.i }; }
-Literal_t div_i(Literal_t n1, Literal_t n2) { return (Literal_t) { n1.i / n2.i }; }
+Literal_t add_i(Literal_t n1, Literal_t n2) { Literal_t s; s.i = n1.i + n2.i; return s; }
+Literal_t sub_i(Literal_t n1, Literal_t n2) { Literal_t s; s.i = n1.i - n2.i; return s; }
+Literal_t mul_i(Literal_t n1, Literal_t n2) { Literal_t s; s.i = n1.i * n2.i; return s; }
+Literal_t div_i(Literal_t n1, Literal_t n2) { Literal_t s; s.i = n1.i / n2.i; return s; }
 
-Literal_t add_f(Literal_t n1, Literal_t n2) { 
-    Literal_t s;
-    s.f = n1.f + n2.f;
-    return s;
-}
-Literal_t sub_f(Literal_t n1, Literal_t n2) { return (Literal_t) { n1.f - n2.f }; }
-Literal_t mul_f(Literal_t n1, Literal_t n2) { return (Literal_t) { n1.f * n2.f }; }
-Literal_t div_f(Literal_t n1, Literal_t n2) { return (Literal_t) { n1.f / n2.f }; }
+Literal_t add_f(Literal_t n1, Literal_t n2) { Literal_t s; s.f = n1.f + n2.f; return s; }
+Literal_t sub_f(Literal_t n1, Literal_t n2) { Literal_t s; s.f = n1.f - n2.f; return s; }
+Literal_t mul_f(Literal_t n1, Literal_t n2) { Literal_t s; s.f = n1.f * n2.f; return s; }
+Literal_t div_f(Literal_t n1, Literal_t n2) { Literal_t s; s.f = n1.f / n2.f; return s; }
 
 int exec_instr(Instruction_t instr, Interpreter_t* inter) {
     switch (instr) {

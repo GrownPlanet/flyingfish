@@ -177,5 +177,8 @@ TokenType_t get_type(Expression_t* expr) {
         case ExpressionType_Literal: {
             return expr->value.literal->type;
         }
+        default: {
+            return -1;
+        }
     }
 }
