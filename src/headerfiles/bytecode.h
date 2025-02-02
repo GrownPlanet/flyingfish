@@ -23,10 +23,17 @@ typedef enum {
     Instruction_Xor,
 } Instruction_t;
 
-typedef enum {
-    AddressingMode_Direct,
-    AddressingMode_Indirect,
-} AddressingMode_t;
+
+#define ADDRESSING_MODE_PART     1 // 0b1
+#define ADDRESSING_MODE_DIRECT   0 // 0b0
+#define ADDRESSING_MODE_INDIRECT 1 // 0b1
+
+#define TYPE_PART   7 << 1 // 0b111
+#define TYPE_INT    0 << 1 // 0b000
+#define TYPE_FLOAT  1 << 1 // 0b001
+#define TYPE_CHAR   2 << 1 // 0b010
+#define TYPE_STRING 3 << 1 // 0b011
+#define TYPE_BOOL   4 << 1 // 0b100
 
 typedef struct {
     unsigned char* chunks;

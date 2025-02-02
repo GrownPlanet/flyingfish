@@ -10,11 +10,9 @@ typedef struct {
     size_t stack_pointer;
 } Compiler_t;
 
-// TODO: add support for floats!
-// => float and int bits in a union (Literal_t)
-
 int compile_expression(Compiler_t* compiler, Expression_t* expr);
 TokenType_t get_type(Expression_t* expr);
+int tokentype_to_flag(TokenType_t tokentype);
 
 void compile_literal(Compiler_t* compiler, EV_Literal_t* literal) {
     // INSTR MOV
@@ -23,14 +21,11 @@ void compile_literal(Compiler_t* compiler, EV_Literal_t* literal) {
         (void*)(&(Instruction_t){Instruction_Mov}),
         sizeof(Instruction_t)
     );
+    // FLAGS
+    const int flags = ADDRESSING_MODE_DIRECT;
+    push_chunk(&compiler->bytecode, (void*)(&flags), sizeof(int));
     // ARG1
     push_chunk(&compiler->bytecode, (void*)(&compiler->stack_pointer), sizeof(size_t));
-    // ADR2
-    push_chunk(
-        &compiler->bytecode,
-        (void*)(&(AddressingMode_t){AddressingMode_Direct}),
-        sizeof(AddressingMode_t)
-    );
     // ARG2
     push_chunk(&compiler->bytecode, (void*)literal->value, sizeof(Literal_t));
 }
@@ -54,10 +49,10 @@ int compile_unary(Compiler_t* compiler, EV_Unary_t* unary, size_t line) {
     }
     push_chunk(&compiler->bytecode, (void*)(&instr), sizeof(Instruction_t));
 
-    // T
-    TokenType_t t = get_type(&unary->operant);
-    if (t == -1) { return t; }
-    push_chunk(&compiler->bytecode, (void*)(&t), sizeof(TokenType_t));
+    // FLAGS
+    const int flags = tokentype_to_flag(get_type(&unary->operant));
+    if (flags == -1) { return flags; }
+    push_chunk(&compiler->bytecode, (void*)(&flags), sizeof(int));
 
     // ARG1
     push_chunk(&compiler->bytecode, (void*)(&compiler->stack_pointer), sizeof(size_t));
@@ -93,7 +88,7 @@ int compile_binary(Compiler_t* compiler, EV_Binary_t* bin, size_t line) {
     }
     push_chunk(&compiler->bytecode, (void*)(&instr), sizeof(Instruction_t));
 
-    // T
+    // FLAGS
     TokenType_t t1 = get_type(&bin->left);
     if (t1 == -1) { return t1; }
     TokenType_t t2 = get_type(&bin->right);
@@ -103,17 +98,12 @@ int compile_binary(Compiler_t* compiler, EV_Binary_t* bin, size_t line) {
         printf("Type Error: binary type 1 (= %d) != type 2 (= %d)\n", t1, t2);
         return -1;
     }
-    push_chunk(&compiler->bytecode, (void*)(&t1), sizeof(TokenType_t));
+
+    const int flags = tokentype_to_flag(t1) | ADDRESSING_MODE_INDIRECT;
+    push_chunk(&compiler->bytecode, (void*)(&flags), sizeof(int));
 
     // ARG1
     push_chunk(&compiler->bytecode, (void*)(&compiler->stack_pointer), sizeof(size_t));
-
-    // ADR2
-    push_chunk(
-        &compiler->bytecode,
-        (void*)(&(AddressingMode_t){AddressingMode_Indirect}),
-        sizeof(AddressingMode_t)
-    );
 
     // ARG2
     compiler->stack_pointer++;
@@ -178,6 +168,20 @@ TokenType_t get_type(Expression_t* expr) {
             return expr->value.literal->type;
         }
         default: {
+            return -1;
+        }
+    }
+}
+
+int tokentype_to_flag(TokenType_t tokentype) {
+    switch (tokentype) {
+        case TokenType_IntV: { return TYPE_INT; }
+        case TokenType_FloatV: { return TYPE_FLOAT; }
+        case TokenType_CharV: { return TYPE_CHAR; }
+        case TokenType_StringV: { return TYPE_STRING; }
+        case TokenType_BoolV: { return TYPE_BOOL; }
+        default: {
+            printf("Illigal type (%d) in tokentype_to_flag\n", tokentype);
             return -1;
         }
     }

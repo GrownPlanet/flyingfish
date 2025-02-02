@@ -8,13 +8,15 @@
 Instruction_t read_instruction(Interpreter_t* inter);
 int exec_instr(Instruction_t instr, Interpreter_t* inter);
 Literal_t read_number(Interpreter_t* inter);
-AddressingMode_t read_addressing_mode(Interpreter_t* inter);
-TokenType_t read_type(Interpreter_t* inter);
 int set_stack(Stack_t* stack, size_t index, Literal_t element);
 Literal_t get_elem(Interpreter_t* inter, int64_t pos);
 int exec_binary(
-    Interpreter_t* inter, Literal_t (*operation)(Literal_t, Literal_t) // higher order function
+    Interpreter_t* inter, int flags, 
+    Literal_t (*operation)(Literal_t, Literal_t) // higher order function
 );
+int read_flags(Interpreter_t* inter);
+int extract_addressing_mode(int flags);
+int extract_type(int flags);
 
 Interpreter_t new_interpreter(unsigned char* code, size_t len) {
     Stack_t stack = {
@@ -60,36 +62,36 @@ Literal_t div_f(Literal_t n1, Literal_t n2) { Literal_t s; s.f = n1.f / n2.f; re
 int exec_instr(Instruction_t instr, Interpreter_t* inter) {
     switch (instr) {
         case Instruction_Add: {
-            TokenType_t t = read_type(inter);
+            const int flags = read_flags(inter);
             int res = 0;
-            switch (t) {
-                case TokenType_IntV: { res = exec_binary(inter, add_i); break; }
-                case TokenType_FloatV: { res = exec_binary(inter, add_f); break; }
-                default: { printf("Wrong type for instruction: %d\n", t); res = 1; };
+            switch (extract_type(flags)) {
+                case TYPE_INT: { res = exec_binary(inter, flags, add_i); break; }
+                case TYPE_FLOAT: { res = exec_binary(inter, flags, add_f); break; }
+                default: { printf("Wrong type for instruction: %d\n", extract_type(flags)); res = 1; };
             }
             if (res == 1) { return res; }
             break;
         }
         case Instruction_Div: {
-            TokenType_t t = read_type(inter);
+            const int flags = read_flags(inter);
             int res = 0;
-            switch (t) {
-                case TokenType_IntV: { res = exec_binary(inter, div_i); break; }
-                case TokenType_FloatV: { res = exec_binary(inter, div_f); break; }
-                default: { printf("Wrong type for instruction: %d\n", t); res = 1; };
+            switch (extract_type(flags)) {
+                case TYPE_INT: { res = exec_binary(inter, flags, div_i); break; }
+                case TYPE_FLOAT: { res = exec_binary(inter, flags, div_f); break; }
+                default: { printf("Wrong type for instruction: %d\n", extract_type(flags)); res = 1; };
             }
             if (res == 1) { return res; }
             break;
         }
         case Instruction_Mov: {
+            const int flags = read_flags(inter);
             Literal_t op1 = read_number(inter);
-            AddressingMode_t adr2 = read_addressing_mode(inter);
             Literal_t op2 = read_number(inter);
 
             Literal_t num;
-            switch (adr2) {
-                case AddressingMode_Direct:   num = op2; break;
-                case AddressingMode_Indirect: num = get_elem(inter, op2.i); break;
+            switch (extract_addressing_mode(flags)) {
+                case ADDRESSING_MODE_DIRECT:   num = op2; break;
+                case ADDRESSING_MODE_INDIRECT: num = get_elem(inter, op2.i); break;
                 default: printf("(unreachable) unkown addressing mode!\n"); return 1; break;
             }
             int res = set_stack(&inter->stack, (size_t)op1.i, num);
@@ -97,26 +99,26 @@ int exec_instr(Instruction_t instr, Interpreter_t* inter) {
             break;
         }
         case Instruction_Mul: {
-            TokenType_t t = read_type(inter);
+            const int flags = read_flags(inter);
             int res = 0;
-            switch (t) {
-                case TokenType_IntV: { res = exec_binary(inter, mul_i); break; }
-                case TokenType_FloatV: { res = exec_binary(inter, mul_f); break; }
-                default: { printf("Wrong type for instruction: %d\n", t); res = 1; };
+            switch (extract_type(flags)) {
+                case TYPE_INT: { res = exec_binary(inter, flags, mul_i); break; }
+                case TYPE_FLOAT: { res = exec_binary(inter, flags, mul_f); break; }
+                default: { printf("Wrong type for instruction: %d\n", extract_type(flags)); res = 1; };
             }
             if (res == 1) { return res; }
             break;
         }
         case Instruction_Neg: {
+            const int flags = read_flags(inter);
             Literal_t op1 = read_number(inter);
-            TokenType_t t = read_type(inter);
             Literal_t n;
-            switch (t) {
-                case TokenType_IntV: {
+            switch (extract_type(flags)) {
+                case TYPE_INT: {
                     n.i = -get_elem(inter, op1.i).i;
                     break;
                 }
-                case TokenType_FloatV: {
+                case TYPE_FLOAT: {
                     n.f = -get_elem(inter, op1.f).f;
                     break;
                 }
@@ -130,12 +132,12 @@ int exec_instr(Instruction_t instr, Interpreter_t* inter) {
             break;
         }
         case Instruction_Sub: {
-            TokenType_t t = read_type(inter);
+            const int flags = read_flags(inter);
             int res = 0;
-            switch (t) {
-                case TokenType_IntV: { res = exec_binary(inter, sub_i); break; }
-                case TokenType_FloatV: { res = exec_binary(inter, sub_f); break; }
-                default: { printf("Wrong type for instruction: %d\n", t); res = 1; };
+            switch (extract_type(flags)) {
+                case TYPE_INT: { res = exec_binary(inter, flags, sub_i); break; }
+                case TYPE_FLOAT: { res = exec_binary(inter, flags, sub_f); break; }
+                default: { printf("Wrong type for instruction: %d\n", extract_type(flags)); res = 1; };
             }
             if (res == 1) { return res; }
             break;
@@ -149,16 +151,16 @@ int exec_instr(Instruction_t instr, Interpreter_t* inter) {
 }
 
 int exec_binary(
-    Interpreter_t* inter, Literal_t (*operation)(Literal_t, Literal_t) // higher order function
+    Interpreter_t* inter, int flags, 
+    Literal_t (*operation)(Literal_t, Literal_t) // higher order function
 ) {
     Literal_t op1 = read_number(inter);
-    AddressingMode_t adr2 = read_addressing_mode(inter);
     Literal_t op2 = read_number(inter);
 
     Literal_t num;
-    switch (adr2) {
-        case AddressingMode_Direct: num = operation(get_elem(inter, op1.i), op2); break;
-        case AddressingMode_Indirect: num = operation(get_elem(inter, op1.i), get_elem(inter, op2.i)); break;
+    switch (extract_addressing_mode(flags)) {
+        case ADDRESSING_MODE_DIRECT: num = operation(get_elem(inter, op1.i), op2); break;
+        case ADDRESSING_MODE_INDIRECT: num = operation(get_elem(inter, op1.i), get_elem(inter, op2.i)); break;
         default: printf("(unreachable) unkown addressing mode!\n"); return 1; break;
     }
     int res = set_stack(&inter->stack, (size_t)op1.i, num);
@@ -172,24 +174,6 @@ Literal_t read_number(Interpreter_t* inter) {
     }
     inter->instr_ptr += sizeof(Literal_t);
     return (Literal_t){num};
-}
-
-AddressingMode_t read_addressing_mode(Interpreter_t* inter) {
-    int adrm = 0;
-    for (size_t i = 0; i < sizeof(AddressingMode_t); i++) {
-        adrm = adrm | (inter->code[inter->instr_ptr  + i] << (i * 8));
-    }
-    inter->instr_ptr += sizeof(AddressingMode_t);
-    return (AddressingMode_t)adrm;
-}
-
-TokenType_t read_type(Interpreter_t* inter) {
-    int t = 0;
-    for (size_t i = 0; i < sizeof(TokenType_t); i++) {
-        t = t | (inter->code[inter->instr_ptr  + i] << (i * 8));
-    }
-    inter->instr_ptr += sizeof(TokenType_t);
-    return (TokenType_t)t;
 }
 
 Instruction_t read_instruction(Interpreter_t* inter) {
@@ -218,4 +202,19 @@ int set_stack(Stack_t* stack, size_t index, Literal_t element) {
 
     stack->data[index] = element;
     return 0;
+}
+
+int read_flags(Interpreter_t* inter) {
+    int flags = 0;
+    for (size_t i = 0; i < sizeof(TokenType_t); i++) {
+        flags = flags | (inter->code[inter->instr_ptr  + i] << (i * 8));
+    }
+    inter->instr_ptr += sizeof(int);
+    return flags;
+}
+int extract_addressing_mode(int flags) {
+    return flags & ADDRESSING_MODE_PART;
+}
+int extract_type(int flags) {
+    return flags & TYPE_PART;
 }
