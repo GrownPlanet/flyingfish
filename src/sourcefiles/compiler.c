@@ -18,16 +18,17 @@ void compile_literal(Compiler_t* compiler, EV_Literal_t* literal) {
     // INSTR MOV
     push_chunk(
         &compiler->bytecode,
-        (void*)(&(Instruction_t){Instruction_Mov}),
+        (void*)(&(Instruction_t){ Instruction_Mov }),
         sizeof(Instruction_t)
     );
     // FLAGS
     const int flags = ADDRESSING_MODE_DIRECT;
     push_chunk(&compiler->bytecode, (void*)(&flags), sizeof(int));
     // ARG1
-    push_chunk(&compiler->bytecode, (void*)(&compiler->stack_pointer), sizeof(size_t));
+    push_chunk(&compiler->bytecode, (void*)(&compiler->stack_pointer), sizeof(Literal_t));
     // ARG2
     push_chunk(&compiler->bytecode, (void*)literal->value, sizeof(Literal_t));
+    printf("MOV %x, %llx, %llx\n", flags, compiler->stack_pointer, literal->value->i);
 }
 
 int compile_unary(Compiler_t* compiler, EV_Unary_t* unary, size_t line) {

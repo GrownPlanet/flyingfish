@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "string_utils.h"
 #include "bytecode.h"
 #include "compiler.h"
 #include "emitter.h"
@@ -11,7 +12,6 @@
 #include "token.h"
 #include "error.h"
 #include "parser.h"
-#include "string_utils.h"
 #include "interpreter.h"
 
 void print_literal(TokenType_t type, Literal_t* lit);

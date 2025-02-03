@@ -14,7 +14,7 @@
  * |
  * | plus/minus V
  * | 
- * | // doing the rest later, I want something that can compile the code :)
+ * | TODO:
  * | comparison
  * | 
  * | equalequal/notequal

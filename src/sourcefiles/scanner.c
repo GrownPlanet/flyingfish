@@ -10,11 +10,11 @@
 char peek_char(String_t input, size_t index);
 void push_token(Token_t** tokens, size_t* t_capacity, size_t* t_len, Token_t token);
 
-Token_t keyword_to_token(char* identifier, size_t line);
+Token_t keyword_to_token(String_t* identifier, size_t line);
 
-char* extract_identifier(String_t input, size_t* index, size_t line);
+String_t* extract_identifier(String_t input, size_t* index, size_t line);
 char* extract_num(String_t input, size_t* index, bool* is_float, size_t line);
-char* extract_string(String_t input, size_t* index, size_t line);
+String_t* extract_string(String_t input, size_t* index, size_t line);
 
 ScanResult_t scan(String_t input) {
     Token_t* tokens = (Token_t*)malloc(sizeof(Token_t));
@@ -107,7 +107,7 @@ ScanResult_t scan(String_t input) {
                 push_token(&tokens, &t_len, &t_capacity, new_token(TokenType_Semicolon, line, NULL));
                 break;
             case '"': {
-                char* str = extract_string(input, &i, line);
+                String_t* str = extract_string(input, &i, line);
                 Literal_t* lit = (Literal_t*)malloc(sizeof(Literal_t));
                 if (lit == NULL) {
                     report_error("malloc failed", line);
@@ -181,7 +181,7 @@ ScanResult_t scan(String_t input) {
 
                 // check if c is is alphabetic
                 if (('A' <= ch && ch <= 'Z') || ('a' <= ch && ch <= 'z')) {
-                    char* identifier = extract_identifier(input, &i, line);
+                    String_t* identifier = extract_identifier(input, &i, line);
                     push_token(&tokens, &t_len, &t_capacity, keyword_to_token(identifier, line));
 
                     i--;
@@ -214,19 +214,19 @@ void push_token(Token_t** tokens, size_t* t_len, size_t* t_capacity, Token_t tok
     push((void**)tokens, t_len, t_capacity, sizeof(token), &token);
 }
 
-Token_t keyword_to_token(char* identifier, size_t line) {
-    char* keys[] = {
-        "if",
-        "else",
-        "func",
-        "for",
-        "return",
-        "while",
-        "int", 
-        "float", 
-        "char", 
-        "string", 
-        "bool",
+Token_t keyword_to_token(String_t* identifier, size_t line) {
+    String_t keys[] = {
+        (String_t) { .chars = "if", .len = 2 },
+        (String_t) { .chars = "else", .len = 4 },
+        (String_t) { .chars = "func", .len = 4 },
+        (String_t) { .chars = "for", .len = 3 },
+        (String_t) { .chars = "return", .len = 6 },
+        (String_t) { .chars = "while", .len = 5 },
+        (String_t) { .chars = "int", .len = 3 },
+        (String_t) { .chars = "float", .len = 5 },
+        (String_t) { .chars = "char", .len = 4 },
+        (String_t) { .chars = "string", .len = 6 },
+        (String_t) { .chars = "bool", .len = 4 },
     };
 
     TokenType_t values[] = {
@@ -243,10 +243,10 @@ Token_t keyword_to_token(char* identifier, size_t line) {
         TokenType_BoolT,
     };
     
-    size_t len = sizeof(keys) / sizeof(char*);
+    size_t len = sizeof(keys) / sizeof(String_t);
 
-    for (size_t i = 0;i < len; i++) {
-        if (strcmp(identifier, keys[i]) == 0) {
+    for (size_t i = 0; i < len; i++) {
+        if (string_cmp(*identifier, keys[i])) {
             return new_token(values[i], line, NULL);
         }
     }
@@ -257,12 +257,12 @@ Token_t keyword_to_token(char* identifier, size_t line) {
         return new_token(TokenType_Identifier, line, NULL);
     }
 
-    if (strcmp(identifier, "true") == 0) {
+    if (string_cmp(*identifier, (String_t) { .chars = "true", .len = 4 })) {
         lit->b = true;
         return new_token(TokenType_BoolV, line, lit);
     }
 
-    if (strcmp(identifier, "false") == 0) {
+    if (string_cmp(*identifier, (String_t) { .chars = "false", .len = 5 })) {
         lit->b = false;
         return new_token(TokenType_BoolV, line, lit);
     }
@@ -271,11 +271,11 @@ Token_t keyword_to_token(char* identifier, size_t line) {
     return new_token(TokenType_Identifier, line, lit);
 }
 
-char* extract_identifier(String_t input, size_t* index, size_t line) {
+String_t* extract_identifier(String_t input, size_t* index, size_t line) {
     char* ident = (char*)malloc(1 * sizeof(char));
     if (ident == NULL) {
         report_error("malloc failed", line);
-        return "";
+        return NULL;
     }
 
     size_t i_capacity = 1;
@@ -294,10 +294,13 @@ char* extract_identifier(String_t input, size_t* index, size_t line) {
         }
     }
 
-    char null_ch = '\0';
-    push((void**)&ident, &i_len, &i_capacity, sizeof(char), &null_ch);
+    realloc((void*)ident, i_len);
 
-    return ident;
+    String_t* retv = (String_t*)malloc(sizeof(String_t));
+    retv->chars = ident;
+    retv->len = i_len;
+
+    return retv;
 }
 
 char* extract_num(String_t input, size_t* index, bool* is_float, size_t line) {
@@ -340,13 +343,13 @@ char* extract_num(String_t input, size_t* index, bool* is_float, size_t line) {
     return num;
 }
 
-char* extract_string(String_t input, size_t* index, size_t line) {
+String_t* extract_string(String_t input, size_t* index, size_t line) {
     (*index)++;
 
     char* str = (char*)malloc(1 * sizeof(char));
     if (str == NULL) {
         report_error("malloc failed", line);
-        return "";
+        return NULL;
     }
 
     size_t s_capacity = 1;
@@ -357,20 +360,24 @@ char* extract_string(String_t input, size_t* index, size_t line) {
         (*index)++;
         if (*index >= input.len) {
             report_error("expected `\"` after string", line);
-            return "";
+            return NULL;
         }
     }
 
-    char null_ch = '\0';
-    push((void**)&str, &s_len, &s_capacity, sizeof(char), &null_ch);
+    realloc((void*)str, s_len);
 
-    return str;
+    String_t* retv = (String_t*)malloc(sizeof(String_t));
+    retv->chars = str;
+    retv->len = s_len;
+
+    return retv;
 }
 
 void free_tokens(ScanResult_t tokens) {
     for (size_t i = 0; i < tokens.len; i++) {
         Token_t token = tokens.tokens[i];
         if (token.type == TokenType_StringV || token.type == TokenType_Identifier) {
+            free(token.literal->s->chars);
             free(token.literal->s);
         }
         free(token.literal);

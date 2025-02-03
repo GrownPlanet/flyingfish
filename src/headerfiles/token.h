@@ -12,6 +12,8 @@
 #include <stdlib.h>
 #include <stdint.h>
 
+#include "string_utils.h"
+
 typedef enum {
     // parens, braces (0 - 3)
     TokenType_LeftParen, TokenType_RightParen, TokenType_LeftBrace, TokenType_RightBrace, 
@@ -35,7 +37,7 @@ typedef enum {
 typedef union {
     int64_t i;
     double f;
-    char* s;
+    String_t* s;
     char c;
     bool b;
 } Literal_t;
