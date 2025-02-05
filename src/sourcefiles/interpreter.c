@@ -84,13 +84,9 @@ int exec_instr(Instruction_t instr, Interpreter_t* inter) {
             break;
         }
         case Instruction_Mov: {
-            printf("ip %ld\n", inter->instr_ptr);
             const int flags = read_flags(inter);
-            printf("ip %ld\n", inter->instr_ptr);
             Literal_t op1 = read_number(inter);
-            printf("ip %ld\n", inter->instr_ptr);
             Literal_t op2 = read_number(inter);
-            printf("ip %ld\n", inter->instr_ptr);
 
             Literal_t num;
             switch (extract_addressing_mode(flags)) {
@@ -98,7 +94,6 @@ int exec_instr(Instruction_t instr, Interpreter_t* inter) {
                 case ADDRESSING_MODE_INDIRECT: num = get_elem(inter, op2.i); break;
                 default: printf("(unreachable) unkown addressing mode!\n"); return 1; break;
             }
-            printf("MOV %x, %llx, %llx\n", flags, op1.i, op2.i);
             int res = set_stack(&inter->stack, (size_t)op1.i, num);
             if (res == 1) { return res; }
             break;

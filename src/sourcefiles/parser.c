@@ -5,34 +5,18 @@
 #include "token.h"
 #include "error.h"
 
-/*
- * | primary V
- * |
- * | unary V
- * |
- * | multiplication/division V
- * |
- * | plus/minus V
- * | 
- * | TODO:
- * | comparison
- * | 
- * | equalequal/notequal
- * |
- * | and/or
- * V
- * */
-
 void advance(size_t len, size_t* index);
 Expression_t* parse(ScanResult_t tokens);
 Expression_t* parse_term(Token_t* tokens, size_t len, size_t* index);
+
+// TODO: change type for comparisons
 
 Expression_t* parse_primary(Token_t* tokens, size_t len, size_t* index) {
     Token_t token = tokens[*index];
 
     Expression_t* expr = (Expression_t*)malloc(sizeof(Expression_t));
     if (expr == NULL) {
-        report_error("malloc failed!\n", token.line);
+        report_error("malloc failed!", token.line);
         return NULL;
     }
     expr->line = token.line;
@@ -47,7 +31,7 @@ Expression_t* parse_primary(Token_t* tokens, size_t len, size_t* index) {
 
             EV_Literal_t* lit = (EV_Literal_t*)malloc(sizeof(EV_Literal_t));
             if (lit == NULL) {
-                report_error("malloc failed!\n", token.line);
+                report_error("malloc failed!", token.line);
                 return NULL;
             }
 
@@ -88,7 +72,7 @@ Expression_t* parse_unary(Token_t* tokens, size_t len, size_t* index) {
 
         Expression_t* expr = (Expression_t*)malloc(sizeof(Expression_t));
         if (expr == NULL) {
-            report_error("malloc failed!\n", token.line);
+            report_error("malloc failed!", token.line);
             return NULL;
         }
         expr->line = token.line;
@@ -108,6 +92,8 @@ Expression_t* parse_unary(Token_t* tokens, size_t len, size_t* index) {
         }
         un->operant = *operant;
 
+        un->type = get_expression_type(operant);
+
         ExpressionValue_t v;
         v.unary = un;
         expr->value = v;
@@ -119,13 +105,17 @@ Expression_t* parse_unary(Token_t* tokens, size_t len, size_t* index) {
 }
 
 Expression_t* parse_binary(
-    Token_t* tokens, size_t len, size_t* index, TokenType_t types[2], 
+    Token_t* tokens, size_t len, size_t* index, TokenType_t* types, size_t types_len,
     Expression_t* (*base_func)(Token_t*, size_t, size_t*) // higher order function
 ) {
     Expression_t* expr = base_func(tokens, len, index);
 
     Token_t token = tokens[*index];
-    while (token.type == types[0] || token.type == types[1]) {
+    bool running = false;
+    for (size_t i = 0; i < types_len; i++) {
+        running |= token.type == types[i];
+    }
+    while (running) {
         Expression_t* right = (Expression_t*)malloc(sizeof(Expression_t));
         if (right == NULL) {
             report_error("malloc failed!\n", token.line);
@@ -150,11 +140,24 @@ Expression_t* parse_binary(
         bin->right = *base_func(tokens, len, index);
         token = tokens[*index];
 
+        TokenType_t t1 = get_expression_type(expr);
+        TokenType_t t2 = get_expression_type(&bin->right);
+        if (t1 != t2) {
+            report_error("Type of the left doesn't type of the right", token.line);
+            return NULL;
+        }
+        bin->type = t1;
+
         ExpressionValue_t v;
         v.binary = bin;
         right->value = v;
 
         expr = right;
+
+        running = false;
+        for (size_t i = 0; i < types_len; i++) {
+            running |= token.type == types[i];
+        }
     }
 
     return expr;
@@ -162,18 +165,71 @@ Expression_t* parse_binary(
 }
 
 Expression_t* parse_factor(Token_t* tokens, size_t len, size_t* index) {
-    TokenType_t types[2] = {TokenType_Star, TokenType_Slash};
-    return parse_binary(tokens, len, index, types, parse_unary);
+    size_t types_len = 2;
+    TokenType_t* types = (TokenType_t*)malloc(sizeof(TokenType_t) * types_len );
+    if (types == NULL) {
+        report_error("malloc failed!n", 0);
+        return NULL;
+    }
+    types[0] = TokenType_Star;
+    types[1] = TokenType_Slash;
+
+    return parse_binary(tokens, len, index, types, types_len, parse_unary);
 }
 
 Expression_t* parse_term(Token_t* tokens, size_t len, size_t* index) {
-    TokenType_t types[2] = {TokenType_Plus, TokenType_Minus};
-    return parse_binary(tokens, len, index, types, parse_factor);
+    size_t types_len = 2;
+    TokenType_t* types = (TokenType_t*)malloc(sizeof(TokenType_t) * types_len);
+    if (types == NULL) {
+        report_error("malloc failed!n", 0);
+        return NULL;
+    }
+    types[0] = TokenType_Plus;
+    types[1] = TokenType_Minus;
+    return parse_binary(tokens, len, index, types, types_len, parse_factor);
+}
+
+Expression_t* parse_comparison(Token_t* tokens, size_t len, size_t* index) {
+    size_t types_len = 4;
+    TokenType_t* types = (TokenType_t*)malloc(sizeof(TokenType_t) * types_len);
+    if (types == NULL) {
+        report_error("malloc failed!", 0);
+        return NULL;
+    }
+    types[0] = TokenType_Greater;
+    types[1] = TokenType_GreaterEqual;
+    types[2] = TokenType_Lesser;
+    types[3] = TokenType_LesserEqual;
+    return parse_binary(tokens, len, index, types, types_len, parse_term);
+}
+
+Expression_t* parse_eq_neq(Token_t* tokens, size_t len, size_t* index) {
+    size_t types_len = 2;
+    TokenType_t* types = (TokenType_t*)malloc(sizeof(TokenType_t) * types_len);
+    if (types == NULL) {
+        report_error("malloc failed!n", 0);
+        return NULL;
+    }
+    types[0] = TokenType_EqualEqual;
+    types[1] = TokenType_BangEqual;
+    return parse_binary(tokens, len, index, types, types_len, parse_comparison);
+}
+
+Expression_t* parse_and_or(Token_t* tokens, size_t len, size_t* index) {
+    size_t types_len = 2;
+    TokenType_t* types = (TokenType_t*)malloc(sizeof(TokenType_t) * types_len);
+    if (types == NULL) {
+        report_error("malloc failed!", 0);
+        return NULL;
+    }
+    types[0] = TokenType_And;
+    types[1] = TokenType_Or;
+    return parse_binary(tokens, len, index, types, types_len, parse_eq_neq);
 }
 
 Expression_t* parse(ScanResult_t tokens) {
     size_t index = 0;
-    return parse_term(tokens.tokens, tokens.len, &index);
+    return parse_and_or(tokens.tokens, tokens.len, &index);
 }
 
 void advance(size_t len, size_t* index) {

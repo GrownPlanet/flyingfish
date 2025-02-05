@@ -92,7 +92,7 @@ ScanResult_t scan(String_t input) {
                 }
                 break;
             case '&':
-                push_token(&tokens, &t_len, &t_capacity, new_token(TokenType_Bang, line, NULL));
+                push_token(&tokens, &t_len, &t_capacity, new_token(TokenType_And, line, NULL));
                 break;
             case '|':
                 push_token(&tokens, &t_len, &t_capacity, new_token(TokenType_Or, line, NULL));
@@ -294,7 +294,7 @@ String_t* extract_identifier(String_t input, size_t* index, size_t line) {
         }
     }
 
-    realloc((void*)ident, i_len);
+    ident = realloc((void*)ident, i_len);
 
     String_t* retv = (String_t*)malloc(sizeof(String_t));
     retv->chars = ident;
@@ -364,7 +364,7 @@ String_t* extract_string(String_t input, size_t* index, size_t line) {
         }
     }
 
-    realloc((void*)str, s_len);
+    str = realloc((void*)str, s_len);
 
     String_t* retv = (String_t*)malloc(sizeof(String_t));
     retv->chars = str;

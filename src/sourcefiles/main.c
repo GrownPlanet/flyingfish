@@ -151,7 +151,9 @@ void print_literal(TokenType_t type, Literal_t* lit) {
             break;
         case TokenType_Identifier:
         case TokenType_StringV:
-            printf("\"%s\"", lit->s);
+            for (size_t i; i < lit->s->len; i++) {
+                printf("%c", lit->s->chars[i]);
+            }
             break;
         case TokenType_CharV:
             printf("'%c'", lit->c);
@@ -186,6 +188,8 @@ void print_expression(Expression_t* expr) {
         case ExpressionType_Unary: {
             EV_Unary_t* un = expr->value.unary;
             printf("(");
+            print_token_type(un->type);
+            printf(" ");
             print_token_type(un->operator);
             printf(" ");
             print_expression(&un->operant);
@@ -195,6 +199,8 @@ void print_expression(Expression_t* expr) {
         case ExpressionType_Binary: {
             EV_Binary_t* bin = expr->value.binary;
             printf("(");
+            print_token_type(bin->type);
+            printf(" ");
             print_expression(&bin->left);
             printf(" ");
             print_token_type(bin->operator.type);

@@ -5,9 +5,6 @@
  *
  */
 
-// TODO:
-// - add type to each expression for earlier type checking?
-
 #ifndef EXPRESSION_H
 #define EXPRESSION_H
 
@@ -39,11 +36,13 @@ struct EV_Binary_t {
     Expression_t left;
     Token_t operator;
     Expression_t right;
+    TokenType_t type;
 };
 
 struct EV_Unary_t {
     TokenType_t operator;
     Expression_t operant;
+    TokenType_t type;
 };
 
 struct EV_Literal_t {
@@ -52,5 +51,6 @@ struct EV_Literal_t {
 };
 
 void free_expression(Expression_t* expr);
+TokenType_t get_expression_type(Expression_t* expr);
 
 #endif // EXPRESSION_H
