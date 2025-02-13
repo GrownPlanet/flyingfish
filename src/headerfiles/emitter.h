@@ -10,6 +10,6 @@
 
 #include "bytecode.h"
 
-void emit(ByteCode_t* bytecode, char* filename);
+int emit(ByteCode_t* bytecode, char* filename);
 
 #endif // EMITTER_H

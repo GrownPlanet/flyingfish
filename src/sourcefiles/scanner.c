@@ -4,7 +4,6 @@
 #include <string.h>
 
 #include "array_utils.h"
-#include "error.h"
 #include "scanner.h"
 
 char peek_char(String_t input, size_t index);
@@ -12,18 +11,20 @@ void push_token(Token_t** tokens, size_t* t_capacity, size_t* t_len, Token_t tok
 
 Token_t keyword_to_token(String_t* identifier, size_t line);
 
-String_t* extract_identifier(String_t input, size_t* index, size_t line);
-char* extract_num(String_t input, size_t* index, bool* is_float, size_t line);
+String_t* extract_identifier(String_t input, size_t* index);
+char* extract_num(String_t input, size_t* index, bool* is_float);
 String_t* extract_string(String_t input, size_t* index, size_t line);
 
 ScanResult_t scan(String_t input) {
     Token_t* tokens = (Token_t*)malloc(sizeof(Token_t));
+    bool had_error = false;
 
     if (tokens == NULL) {
-        report_error("malloc failed", 0);
+        printf("Malloc failed\n");
         return (ScanResult_t){
             .tokens = NULL,
             .len = 0,
+            .had_error = true,
         };
     }
 
@@ -110,10 +111,11 @@ ScanResult_t scan(String_t input) {
                 String_t* str = extract_string(input, &i, line);
                 Literal_t* lit = (Literal_t*)malloc(sizeof(Literal_t));
                 if (lit == NULL) {
-                    report_error("malloc failed", line);
+                    printf("Malloc failed\n");
                     return (ScanResult_t){
                         .tokens = NULL,
                         .len = 0,
+                        .had_error = true,
                     };
                 }
 
@@ -125,10 +127,11 @@ ScanResult_t scan(String_t input) {
                 i++;
                 Literal_t* lit = (Literal_t*)malloc(sizeof(Literal_t));
                 if (lit == NULL) {
-                    report_error("malloc failed", line);
+                    printf("Malloc failed\n");
                     return (ScanResult_t){
                         .tokens = NULL,
                         .len = 0,
+                        .had_error = true,
                     };
                 }
 
@@ -137,7 +140,8 @@ ScanResult_t scan(String_t input) {
 
                 i++;
                 if (input.chars[i] != '\'') {
-                    report_error("expected `'` after char", line);
+                    printf("Expected `'` after char on line %ld\n", line);
+                    had_error = true;
                     i--;
                 }
 
@@ -153,14 +157,15 @@ ScanResult_t scan(String_t input) {
                 // check if c is numeric
                 if ('0' <= ch && ch <= '9') {
                     bool is_float = false;
-                    char* num_str = extract_num(input, &i, &is_float, line);
+                    char* num_str = extract_num(input, &i, &is_float);
 
                     Literal_t* lit = (Literal_t*)malloc(sizeof(Literal_t));
                     if (lit == NULL) {
-                        report_error("malloc failed", line);
+                        printf("Malloc failed\n");
                         return (ScanResult_t){
                             .tokens = NULL,
                             .len = 0,
+                            .had_error = true,
                         };
                     }
 
@@ -181,7 +186,7 @@ ScanResult_t scan(String_t input) {
 
                 // check if c is is alphabetic
                 if (('A' <= ch && ch <= 'Z') || ('a' <= ch && ch <= 'z')) {
-                    String_t* identifier = extract_identifier(input, &i, line);
+                    String_t* identifier = extract_identifier(input, &i);
                     push_token(&tokens, &t_len, &t_capacity, keyword_to_token(identifier, line));
 
                     i--;
@@ -189,17 +194,17 @@ ScanResult_t scan(String_t input) {
                     break;
                 }
 
-                report_error("unexpected character", line);
+                printf("Unexpected character (= %c) on line %ld\n", ch, line);
+                had_error = true;
                 break;
         }
     }
 
-    ScanResult_t scan_result = {
+    return (ScanResult_t) {
         .tokens = tokens, 
-        .len = t_len
+        .len = t_len,
+        .had_error = had_error,
     };
-
-    return scan_result;
 }
 
 char peek_char(String_t input, size_t index) {
@@ -242,7 +247,7 @@ Token_t keyword_to_token(String_t* identifier, size_t line) {
         TokenType_StringT,
         TokenType_BoolT,
     };
-    
+
     size_t len = sizeof(keys) / sizeof(String_t);
 
     for (size_t i = 0; i < len; i++) {
@@ -253,7 +258,7 @@ Token_t keyword_to_token(String_t* identifier, size_t line) {
 
     Literal_t* lit = (Literal_t*)malloc(sizeof(Literal_t));
     if (lit == NULL) {
-        report_error("malloc failed", line);
+        printf("Malloc failed\n");
         return new_token(TokenType_Identifier, line, NULL);
     }
 
@@ -271,10 +276,10 @@ Token_t keyword_to_token(String_t* identifier, size_t line) {
     return new_token(TokenType_Identifier, line, lit);
 }
 
-String_t* extract_identifier(String_t input, size_t* index, size_t line) {
+String_t* extract_identifier(String_t input, size_t* index) {
     char* ident = (char*)malloc(1 * sizeof(char));
     if (ident == NULL) {
-        report_error("malloc failed", line);
+        printf("Malloc failed\n");
         return NULL;
     }
 
@@ -303,11 +308,11 @@ String_t* extract_identifier(String_t input, size_t* index, size_t line) {
     return retv;
 }
 
-char* extract_num(String_t input, size_t* index, bool* is_float, size_t line) {
+char* extract_num(String_t input, size_t* index, bool* is_float) {
     char* num = (char*)malloc(1 * sizeof(char));
     if (num == NULL) {
-        report_error("malloc failed", line);
-        return "";
+        printf("Malloc failed\n");
+        return NULL;
     }
 
     size_t n_capacity = 1;
@@ -348,7 +353,7 @@ String_t* extract_string(String_t input, size_t* index, size_t line) {
 
     char* str = (char*)malloc(1 * sizeof(char));
     if (str == NULL) {
-        report_error("malloc failed", line);
+        printf("Malloc failed\n");
         return NULL;
     }
 
@@ -359,7 +364,7 @@ String_t* extract_string(String_t input, size_t* index, size_t line) {
         push((void**)&str, &s_len, &s_capacity, sizeof(char), &input.chars[*index]);
         (*index)++;
         if (*index >= input.len) {
-            report_error("expected `\"` after string", line);
+            printf("Expected `\"` after string on line %ld\n", line);
             return NULL;
         }
     }

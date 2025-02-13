@@ -14,6 +14,7 @@
 typedef struct {
     Token_t* tokens;
     size_t len;
+    bool had_error;
 } ScanResult_t;
 
 ScanResult_t scan(String_t input);

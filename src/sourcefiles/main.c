@@ -10,7 +10,6 @@
 #include "file_utils.h"
 #include "scanner.h"
 #include "token.h"
-#include "error.h"
 #include "parser.h"
 #include "interpreter.h"
 
@@ -25,8 +24,6 @@ int main(int argc, char* argv[]) {
         print_help_menu(argv[0]);
         return 1;
     }
-
-    init_error();
 
     if (strcmp(argv[1], "compile") == 0 || strcmp(argv[1], "c") == 0) {
         return compile_program(argv[2], "out.cff");
@@ -52,9 +49,8 @@ int compile_program(char* filename, char* output_filename) {
     printf("tokens:\n");
     ScanResult_t tokens = scan(file);
 
-    if (had_error()) {
-        print_errors();
-        free_error();
+    if (tokens.had_error) {
+        free_tokens(tokens);
         return 1;
     }
 
@@ -74,9 +70,8 @@ int compile_program(char* filename, char* output_filename) {
     printf("ast:\n");
     Expression_t* expr = parse(tokens);
 
-    if (had_error()) {
-        print_errors();
-        free_error();
+    if (expr == NULL) {
+        free_tokens(tokens);
         return 1;
     }
 
@@ -86,9 +81,10 @@ int compile_program(char* filename, char* output_filename) {
     // compiling the syntax tree
     ByteCode_t bytecode = compile(expr);
 
-    if (had_error()) {
-        print_errors();
-        free_error();
+    if (bytecode.had_error) {
+        free_tokens(tokens);
+        free_expression(expr);
+        free(bytecode.chunks);
         return 1;
     }
 
@@ -98,16 +94,16 @@ int compile_program(char* filename, char* output_filename) {
     printf("\n");
 
     // emmitter
-    emit(&bytecode, output_filename);
-    if (had_error()) {
-        print_errors();
-        free_error();
+    const int res = emit(&bytecode, output_filename);
+    if (res == 1) {
+        free_tokens(tokens);
+        free_expression(expr);
+        free(bytecode.chunks);
         return 1;
     }
 
     // freeing data
     free(file.chars);
-    free_error();
     free_tokens(tokens);
     free_expression(expr);
     free(expr);

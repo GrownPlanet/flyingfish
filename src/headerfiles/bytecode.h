@@ -9,6 +9,7 @@
 #define BYTECODE_H
 
 #include <stdlib.h>
+#include <stdbool.h>
 
 typedef enum {
     Instruction_Add,
@@ -39,6 +40,7 @@ typedef struct {
     unsigned char* chunks;
     size_t len;
     size_t capacity;
+    bool had_error;
 } ByteCode_t;
 
 void push_chunk(ByteCode_t* bytecode, void* chunck, size_t chunck_size);

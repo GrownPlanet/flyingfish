@@ -11,12 +11,12 @@ Literal_t read_number(Interpreter_t* inter);
 int set_stack(Stack_t* stack, size_t index, Literal_t element);
 Literal_t get_elem(Interpreter_t* inter, int64_t pos);
 int exec_binary(
-    Interpreter_t* inter, int flags, 
+    Interpreter_t* inter, int16_t flags,
     Literal_t (*operation)(Literal_t, Literal_t) // higher order function
 );
-int read_flags(Interpreter_t* inter);
-int extract_addressing_mode(int flags);
-int extract_type(int flags);
+int16_t read_flags(Interpreter_t* inter);
+int16_t extract_addressing_mode(int16_t flags);
+int16_t extract_type(int16_t flags);
 
 Interpreter_t new_interpreter(unsigned char* code, size_t len) {
     Stack_t stack = {
@@ -62,7 +62,7 @@ Literal_t div_f(Literal_t n1, Literal_t n2) { Literal_t s; s.f = n1.f / n2.f; re
 int exec_instr(Instruction_t instr, Interpreter_t* inter) {
     switch (instr) {
         case Instruction_Add: {
-            const int flags = read_flags(inter);
+            const int16_t flags = read_flags(inter);
             int res = 0;
             switch (extract_type(flags)) {
                 case TYPE_INT: { res = exec_binary(inter, flags, add_i); break; }
@@ -73,7 +73,7 @@ int exec_instr(Instruction_t instr, Interpreter_t* inter) {
             break;
         }
         case Instruction_Div: {
-            const int flags = read_flags(inter);
+            const int16_t flags = read_flags(inter);
             int res = 0;
             switch (extract_type(flags)) {
                 case TYPE_INT: { res = exec_binary(inter, flags, div_i); break; }
@@ -84,7 +84,7 @@ int exec_instr(Instruction_t instr, Interpreter_t* inter) {
             break;
         }
         case Instruction_Mov: {
-            const int flags = read_flags(inter);
+            const int16_t flags = read_flags(inter);
             Literal_t op1 = read_number(inter);
             Literal_t op2 = read_number(inter);
 
@@ -99,7 +99,7 @@ int exec_instr(Instruction_t instr, Interpreter_t* inter) {
             break;
         }
         case Instruction_Mul: {
-            const int flags = read_flags(inter);
+            const int16_t flags = read_flags(inter);
             int res = 0;
             switch (extract_type(flags)) {
                 case TYPE_INT: { res = exec_binary(inter, flags, mul_i); break; }
@@ -110,7 +110,7 @@ int exec_instr(Instruction_t instr, Interpreter_t* inter) {
             break;
         }
         case Instruction_Neg: {
-            const int flags = read_flags(inter);
+            const int16_t flags = read_flags(inter);
             Literal_t op1 = read_number(inter);
             Literal_t n;
             switch (extract_type(flags)) {
@@ -132,7 +132,7 @@ int exec_instr(Instruction_t instr, Interpreter_t* inter) {
             break;
         }
         case Instruction_Sub: {
-            const int flags = read_flags(inter);
+            const int16_t flags = read_flags(inter);
             int res = 0;
             switch (extract_type(flags)) {
                 case TYPE_INT: { res = exec_binary(inter, flags, sub_i); break; }
@@ -151,7 +151,7 @@ int exec_instr(Instruction_t instr, Interpreter_t* inter) {
 }
 
 int exec_binary(
-    Interpreter_t* inter, int flags, 
+    Interpreter_t* inter, int16_t flags, 
     Literal_t (*operation)(Literal_t, Literal_t) // higher order function
 ) {
     Literal_t op1 = read_number(inter);
@@ -204,19 +204,19 @@ int set_stack(Stack_t* stack, size_t index, Literal_t element) {
     return 0;
 }
 
-int read_flags(Interpreter_t* inter) {
-    int flags = 0;
+int16_t read_flags(Interpreter_t* inter) {
+    int16_t flags = 0;
     for (size_t i = 0; i < sizeof(int); i++) {
         flags = flags | (inter->code[inter->instr_ptr  + i] << (i * 8));
     }
-    inter->instr_ptr += sizeof(int);
+    inter->instr_ptr += sizeof(int16_t);
     return flags;
 }
 
-int extract_addressing_mode(int flags) {
+int16_t extract_addressing_mode(int16_t flags) {
     return flags & ADDRESSING_MODE_PART;
 }
 
-int extract_type(int flags) {
+int16_t extract_type(int16_t flags) {
     return flags & TYPE_PART;
 }

@@ -3,7 +3,6 @@
 #include "bytecode.h"
 #include "compiler.h"
 #include "expression.h"
-#include "error.h"
 
 typedef struct {
     ByteCode_t bytecode;
@@ -11,7 +10,7 @@ typedef struct {
 } Compiler_t;
 
 int compile_expression(Compiler_t* compiler, Expression_t* expr);
-int tokentype_to_flag(TokenType_t tokentype);
+int16_t tokentype_to_flag(TokenType_t tokentype);
 
 void compile_literal(Compiler_t* compiler, EV_Literal_t* literal) {
     // INSTR MOV
@@ -21,8 +20,8 @@ void compile_literal(Compiler_t* compiler, EV_Literal_t* literal) {
         sizeof(Instruction_t)
     );
     // FLAGS
-    const int flags = ADDRESSING_MODE_DIRECT;
-    push_chunk(&compiler->bytecode, (void*)(&flags), sizeof(int)); 
+    const int16_t flags = ADDRESSING_MODE_DIRECT;
+    push_chunk(&compiler->bytecode, (void*)(&flags), sizeof(int16_t)); 
     // ARG1
     push_chunk(&compiler->bytecode, (void*)(&compiler->stack_pointer), sizeof(Literal_t));
     // ARG2
@@ -43,15 +42,17 @@ int compile_unary(Compiler_t* compiler, EV_Unary_t* unary, size_t line) {
             instr = Instruction_Not; 
             break;
         default:
-            report_error("unexpected token in a unary", line);
-            break;
+            printf("Unexpected token (= ");
+            print_token_type(unary->operator);
+            printf(") in a unary on line %ld\n", line);
+            return 1;
     }
     push_chunk(&compiler->bytecode, (void*)(&instr), sizeof(Instruction_t));
 
     // FLAGS
-    const int flags = tokentype_to_flag(unary->type);
-    if (flags == -1) { return flags; }
-    push_chunk(&compiler->bytecode, (void*)(&flags), sizeof(int));
+    const int16_t flags = tokentype_to_flag(unary->type);
+    if (flags == -1) { return 1; }
+    push_chunk(&compiler->bytecode, (void*)(&flags), sizeof(int16_t));
 
     // ARG1
     push_chunk(&compiler->bytecode, (void*)(&compiler->stack_pointer), sizeof(size_t));
@@ -82,15 +83,17 @@ int compile_binary(Compiler_t* compiler, EV_Binary_t* bin, size_t line) {
             instr = Instruction_Mul;
             break;
         default:
-            report_error("Unexpected token in a binary", line);
-            break;
+            printf("Unexpected token (= ");
+            print_token_type(bin->operator.type);
+            printf(") in a binary on line %ld\n", line);
+            return 1;
     }
     push_chunk(&compiler->bytecode, (void*)(&instr), sizeof(Instruction_t));
 
     // FLAGS
     TokenType_t t = bin->type;
-    const int flags = tokentype_to_flag(t) | ADDRESSING_MODE_INDIRECT;
-    push_chunk(&compiler->bytecode, (void*)(&flags), sizeof(int));
+    const int16_t flags = tokentype_to_flag(t) | ADDRESSING_MODE_INDIRECT;
+    push_chunk(&compiler->bytecode, (void*)(&flags), sizeof(int16_t));
 
     // ARG1
     push_chunk(&compiler->bytecode, (void*)(&compiler->stack_pointer), sizeof(size_t));
@@ -111,12 +114,12 @@ int compile_expression(Compiler_t* compiler, Expression_t* expr) {
         }
         case ExpressionType_Unary: {
             int res = compile_unary(compiler, expr->value.unary, expr->line);
-            if (res == -1) { return res; }
+            if (res == 1) { return res; }
             break;
         }
         case ExpressionType_Binary: {
             int res = compile_binary(compiler, expr->value.binary, expr->line);
-            if (res == -1) { return res; }
+            if (res == 1) { return res; }
             break;
         }
         default: {
@@ -134,6 +137,7 @@ ByteCode_t compile(Expression_t* expr) {
         .chunks = data, 
         .len = 0, 
         .capacity = 1,
+        .had_error = false,
     };
     Compiler_t compiler = {
         .bytecode = bytecode, 
@@ -141,12 +145,12 @@ ByteCode_t compile(Expression_t* expr) {
     };
 
     int res = compile_expression(&compiler, expr);
-    if (res == -1) { exit(1); }
+    if (res == 1) { bytecode.had_error = true; }
 
     return compiler.bytecode;
 }
 
-int tokentype_to_flag(TokenType_t tokentype) {
+int16_t tokentype_to_flag(TokenType_t tokentype) {
     switch (tokentype) {
         case TokenType_IntV: { return TYPE_INT; }
         case TokenType_FloatV: { return TYPE_FLOAT; }
