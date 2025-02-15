@@ -5,8 +5,8 @@
 #include "file_utils.h"
 #include "string_utils.h"
 
-String_t read_file_to_string(char* filename) {
-    FILE* file = fopen(filename, "r");
+String_t read_file_to_string(char* filename, char* mode) {
+    FILE* file = fopen(filename, mode);
 
     if (file == NULL) {
         return (String_t) {
@@ -30,9 +30,7 @@ String_t read_file_to_string(char* filename) {
     }
 
     size_t result = fread(file_data, 1, file_len, file);
-
     if (result != (size_t)file_len) {
-        printf("Error reading file!\n");
         return (String_t) {
             .chars = NULL,
             .len = 0,
@@ -45,6 +43,6 @@ String_t read_file_to_string(char* filename) {
 
     return (String_t) {
         .chars = file_data,
-        .len = file_len,
+        .len = result,
     };
 }

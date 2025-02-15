@@ -39,7 +39,7 @@ int main(int argc, char* argv[]) {
 
 int compile_program(char* filename, char* output_filename) {
     // reading the file
-    String_t file = read_file_to_string(filename);
+    String_t file = read_file_to_string(filename, "r");
     if (file.chars == NULL) {
         printf("Error reading file!\n");
         return 1;
@@ -114,7 +114,7 @@ int compile_program(char* filename, char* output_filename) {
 
 int run_program(char* filename) {
     // read file
-    String_t file = read_file_to_string(filename);
+    String_t file = read_file_to_string(filename, "rb");
     if (file.chars == NULL) {
         printf("Error reading file!\n");
         return 1;
@@ -147,9 +147,11 @@ void print_literal(TokenType_t type, Literal_t* lit) {
             break;
         case TokenType_Identifier:
         case TokenType_StringV:
-            for (size_t i; i < lit->s->len; i++) {
+            printf("\"");
+            for (size_t i = 0; i < lit->s->len; i++) {
                 printf("%c", lit->s->chars[i]);
             }
+            printf("\"");
             break;
         case TokenType_CharV:
             printf("'%c'", lit->c);

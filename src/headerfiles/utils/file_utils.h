@@ -10,6 +10,6 @@
 
 #include "string_utils.h"
 
-String_t read_file_to_string(char* filename);
+String_t read_file_to_string(char* filename, char* mode);
 
 #endif // FILE_UTILS_H

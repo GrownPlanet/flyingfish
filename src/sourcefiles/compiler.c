@@ -82,6 +82,24 @@ int compile_binary(Compiler_t* compiler, EV_Binary_t* bin, size_t line) {
         case TokenType_Star:
             instr = Instruction_Mul;
             break;
+        case TokenType_EqualEqual:
+            instr = Instruction_Eqt;
+            break;
+        case TokenType_BangEqual:
+            instr = Instruction_Nqt;
+            break;
+        case TokenType_Lesser:
+            instr = Instruction_Let;
+            break;
+        case TokenType_Greater:
+            instr = Instruction_Grt;
+            break;
+        case TokenType_LesserEqual:
+            instr = Instruction_Lqt;
+            break;
+        case TokenType_GreaterEqual:
+            instr = Instruction_Gqt;
+            break;
         default:
             printf("Unexpected token (= ");
             print_token_type(bin->operator.type);
@@ -145,7 +163,7 @@ ByteCode_t compile(Expression_t* expr) {
     };
 
     int res = compile_expression(&compiler, expr);
-    if (res == 1) { bytecode.had_error = true; }
+    if (res == 1) { compiler.bytecode.had_error = true; }
 
     return compiler.bytecode;
 }

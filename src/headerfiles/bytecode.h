@@ -22,6 +22,12 @@ typedef enum {
     Instruction_Or,
     Instruction_Sub,
     Instruction_Xor,
+    Instruction_Eqt,
+    Instruction_Nqt,
+    Instruction_Let,
+    Instruction_Grt,
+    Instruction_Lqt,
+    Instruction_Gqt,
 } Instruction_t;
 
 

@@ -6,7 +6,7 @@
 
 int emit(ByteCode_t* bytecode, char* filename) {
     FILE* fptr;
-    fptr = fopen(filename, "w");
+    fptr = fopen(filename, "wb");
     if (fptr == NULL) {
         printf("Failed to open output file\n");
         return 1;

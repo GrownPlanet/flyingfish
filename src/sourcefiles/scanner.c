@@ -57,7 +57,13 @@ ScanResult_t scan(String_t input) {
                 push_token(&tokens, &t_len, &t_capacity, new_token(TokenType_Star, line, NULL));
                 break;
             case '!':
-                push_token(&tokens, &t_len, &t_capacity, new_token(TokenType_Bang, line, NULL));
+                if (peek_char(input, i) == '=') {
+                    push_token(&tokens, &t_len, &t_capacity, new_token(TokenType_BangEqual, line, NULL));
+                    i++;
+                } else {
+                    push_token(&tokens, &t_len, &t_capacity, new_token(TokenType_Bang, line, NULL));
+                }
+                break;
                 break;
             case '/':
                 if (peek_char(input, i) == '/') {
