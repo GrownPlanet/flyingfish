@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <inttypes.h>
 
 #include "bytecode.h"
 #include "compiler.h"
@@ -44,7 +45,7 @@ int compile_unary(Compiler_t* compiler, EV_Unary_t* unary, size_t line) {
         default:
             printf("Unexpected token (= ");
             print_token_type(unary->operator);
-            printf(") in a unary on line %ld\n", line);
+            printf(") in a unary on line %" PRIuMAX "\n", line);
             return 1;
     }
     push_chunk(&compiler->bytecode, (void*)(&instr), sizeof(Instruction_t));
@@ -103,7 +104,7 @@ int compile_binary(Compiler_t* compiler, EV_Binary_t* bin, size_t line) {
         default:
             printf("Unexpected token (= ");
             print_token_type(bin->operator.type);
-            printf(") in a binary on line %ld\n", line);
+            printf(") in a binary on line %" PRIuMAX "\n", line);
             return 1;
     }
     push_chunk(&compiler->bytecode, (void*)(&instr), sizeof(Instruction_t));

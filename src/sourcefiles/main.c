@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <inttypes.h>
 
 #include "string_utils.h"
 #include "bytecode.h"
@@ -140,7 +141,7 @@ int run_program(char* filename) {
 void print_literal(TokenType_t type, Literal_t* lit) {
     switch (type) {
         case TokenType_IntV:
-            printf("%ld", lit->i);
+            printf("%" PRId64 "", lit->i);
             break;
         case TokenType_FloatV:
             printf("%f", lit->f);

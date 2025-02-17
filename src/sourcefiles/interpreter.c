@@ -1,5 +1,5 @@
-#include <stdint.h>
 #include <stdio.h>
+#include <inttypes.h>
 
 #include "interpreter.h"
 #include "bytecode.h"
@@ -42,7 +42,7 @@ int interpret(Interpreter_t interpreter) {
     printf("stack:\n");
     for (size_t i = 0; i < interpreter.stack.capacity; i++) {
         Literal_t sd = interpreter.stack.data[i];
-        printf("  %lx; %f; %ld,\n", sd.i, sd.f, sd.i);
+        printf("  %" PRIx64 "; %f; %" PRId64 ",\n", sd.i, sd.f, sd.i);
     }
 
     return 0;
@@ -50,14 +50,19 @@ int interpret(Interpreter_t interpreter) {
 
 // arguments for the exec_binary function
 Literal_t add_i(Literal_t n1, Literal_t n2) { Literal_t s; s.i = n1.i + n2.i; return s; }
-Literal_t sub_i(Literal_t n1, Literal_t n2) { Literal_t s; s.i = n1.i - n2.i; return s; }
-Literal_t mul_i(Literal_t n1, Literal_t n2) { Literal_t s; s.i = n1.i * n2.i; return s; }
-Literal_t div_i(Literal_t n1, Literal_t n2) { Literal_t s; s.i = n1.i / n2.i; return s; }
-
 Literal_t add_f(Literal_t n1, Literal_t n2) { Literal_t s; s.f = n1.f + n2.f; return s; }
+
+Literal_t sub_i(Literal_t n1, Literal_t n2) { Literal_t s; s.i = n1.i - n2.i; return s; }
 Literal_t sub_f(Literal_t n1, Literal_t n2) { Literal_t s; s.f = n1.f - n2.f; return s; }
+
+Literal_t mul_i(Literal_t n1, Literal_t n2) { Literal_t s; s.i = n1.i * n2.i; return s; }
 Literal_t mul_f(Literal_t n1, Literal_t n2) { Literal_t s; s.f = n1.f * n2.f; return s; }
+ 
+Literal_t div_i(Literal_t n1, Literal_t n2) { Literal_t s; s.i = n1.i / n2.i; return s; }
 Literal_t div_f(Literal_t n1, Literal_t n2) { Literal_t s; s.f = n1.f / n2.f; return s; }
+
+Literal_t eqt_i(Literal_t n1, Literal_t n2) { Literal_t s; s.i = (n1.i == n2.i); return s; }
+Literal_t eqt_f(Literal_t n1, Literal_t n2) { Literal_t s; s.f = (n1.f == n2.f); return s; }
 
 int exec_instr(Instruction_t instr, Interpreter_t* inter) {
     switch (instr) {
@@ -65,9 +70,9 @@ int exec_instr(Instruction_t instr, Interpreter_t* inter) {
             const int16_t flags = read_flags(inter);
             int res = 0;
             switch (extract_type(flags)) {
-                case TYPE_INT: { res = exec_binary(inter, flags, add_i); break; }
-                case TYPE_FLOAT: { res = exec_binary(inter, flags, add_f); break; }
-                default: { printf("Wrong type for instruction: %d\n", extract_type(flags)); res = 1; };
+                case TYPE_INT: { res |= exec_binary(inter, flags, add_i); break; }
+                case TYPE_FLOAT: { res |= exec_binary(inter, flags, add_f); break; }
+                default: { printf("Wrong type for instruction: %d\n", extract_type(flags)); res |= 1; };
             }
             if (res == 1) { return res; }
             break;
@@ -76,9 +81,9 @@ int exec_instr(Instruction_t instr, Interpreter_t* inter) {
             const int16_t flags = read_flags(inter);
             int res = 0;
             switch (extract_type(flags)) {
-                case TYPE_INT: { res = exec_binary(inter, flags, div_i); break; }
-                case TYPE_FLOAT: { res = exec_binary(inter, flags, div_f); break; }
-                default: { printf("Wrong type for instruction: %d\n", extract_type(flags)); res = 1; };
+                case TYPE_INT: { res |= exec_binary(inter, flags, div_i); break; }
+                case TYPE_FLOAT: { res |= exec_binary(inter, flags, div_f); break; }
+                default: { printf("Wrong type for instruction: %d\n", extract_type(flags)); res |= 1; };
             }
             if (res == 1) { return res; }
             break;
@@ -102,9 +107,9 @@ int exec_instr(Instruction_t instr, Interpreter_t* inter) {
             const int16_t flags = read_flags(inter);
             int res = 0;
             switch (extract_type(flags)) {
-                case TYPE_INT: { res = exec_binary(inter, flags, mul_i); break; }
-                case TYPE_FLOAT: { res = exec_binary(inter, flags, mul_f); break; }
-                default: { printf("Wrong type for instruction: %d\n", extract_type(flags)); res = 1; };
+                case TYPE_INT: { res |= exec_binary(inter, flags, mul_i); break; }
+                case TYPE_FLOAT: { res |= exec_binary(inter, flags, mul_f); break; }
+                default: { printf("Wrong type for instruction: %d\n", extract_type(flags)); res |= 1; };
             }
             if (res == 1) { return res; }
             break;
@@ -113,21 +118,16 @@ int exec_instr(Instruction_t instr, Interpreter_t* inter) {
             const int16_t flags = read_flags(inter);
             Literal_t op1 = read_number(inter);
             Literal_t n;
+            int res = 0;
             switch (extract_type(flags)) {
-                case TYPE_INT: {
-                    n.i = -get_elem(inter, op1.i).i;
-                    break;
+                case TYPE_INT: { n.i = -get_elem(inter, op1.i).i; break; }
+                case TYPE_FLOAT: { n.f = -get_elem(inter, op1.f).f; break; }
+                default: {
+                    printf("Wrong type for instruction: %d\n", extract_type(flags)); res = 1;
                 }
-                case TYPE_FLOAT: {
-                    n.f = -get_elem(inter, op1.f).f;
-                    break;
-                }
-                default:
-                    printf("TODO: proper error handeling.. :(\n");
-                    return 1;
-                    break;
+                if (res == 1) { return res; }
             }
-            int res = set_stack(&inter->stack, (size_t)op1.i, n);
+            res |= set_stack(&inter->stack, (size_t)op1.i, n);
             if (res == 1) { return res; }
             break;
         }
@@ -135,13 +135,24 @@ int exec_instr(Instruction_t instr, Interpreter_t* inter) {
             const int16_t flags = read_flags(inter);
             int res = 0;
             switch (extract_type(flags)) {
-                case TYPE_INT: { res = exec_binary(inter, flags, sub_i); break; }
-                case TYPE_FLOAT: { res = exec_binary(inter, flags, sub_f); break; }
-                default: { printf("Wrong type for instruction: %d\n", extract_type(flags)); res = 1; };
+                case TYPE_INT: { res |= exec_binary(inter, flags, sub_i); break; }
+                case TYPE_FLOAT: { res |= exec_binary(inter, flags, sub_f); break; }
+                default: { printf("Wrong type for instruction: %d\n", extract_type(flags)); res |= 1; };
             }
             if (res == 1) { return res; }
             break;
         }
+        case Instruction_Eqt: {
+            const int16_t flags = read_flags(inter);
+            int res = 0;
+            switch (extract_type(flags)) {
+                case TYPE_INT: { res |= exec_binary(inter, flags, eqt_i); break; }
+                case TYPE_FLOAT: { res |= exec_binary(inter, flags, eqt_f); break; }
+                default: { printf("Wrong type for instruction: %d\n", extract_type(flags)); res |= 1; };
+            }
+            if (res == 1) { return res; }
+            break;
+        } 
         default:
             printf("TODO: instruction %d not programmed yet!\n", instr);
             return 1;

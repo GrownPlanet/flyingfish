@@ -4,6 +4,4 @@ if [ ! -d build ]; then
   mkdir -p build;
 fi
 
-cd build\
-    && cmake ..\
-    && cmake --build .
+cmake -B build && cmake --build build

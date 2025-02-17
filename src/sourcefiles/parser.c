@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <inttypes.h>
 
 #include "parser.h"
 #include "expression.h"
@@ -47,14 +48,14 @@ Expression_t* parse_primary(Token_t* tokens, size_t len, size_t* index) {
             token = tokens[*index];
 
             if (token.type != TokenType_RightParen) {
-                printf("Expected left paren after expression on line %ld\n", token.line);
+                printf("Expected left paren after expression on line %" PRIuMAX "\n", token.line);
                 return NULL;
             }
             advance(len, index);
 
             return expr;
         default:
-            printf("Expected primary on line %ld\n", token.line);
+            printf("Expected primary on line %" PRIuMAX "\n", token.line);
             return NULL;
     }
 
@@ -103,7 +104,6 @@ Expression_t* parse_unary(Token_t* tokens, size_t len, size_t* index) {
 
 Expression_t* parse_binary(
     Token_t* tokens, size_t len, size_t* index, TokenType_t* types, size_t types_len,
-    bool change_type, TokenType_t change_type_to,
     Expression_t* (*base_func)(Token_t*, size_t, size_t*) // higher order function
 ) {
     Expression_t* expr = base_func(tokens, len, index);
@@ -145,10 +145,10 @@ Expression_t* parse_binary(
             print_token_type(t1);
             printf(" and ");
             print_token_type(t2);
-            printf("on line %ld\n", token.line);
+            printf("on line %" PRIuMAX "\n", token.line);
             return NULL;
         }
-        bin->type = change_type ? change_type_to : t1;
+        bin->type = t1;
 
         ExpressionValue_t v;
         v.binary = bin;
@@ -176,7 +176,7 @@ Expression_t* parse_factor(Token_t* tokens, size_t len, size_t* index) {
     types[0] = TokenType_Star;
     types[1] = TokenType_Slash;
 
-    return parse_binary(tokens, len, index, types, types_len, false, 0, parse_unary);
+    return parse_binary(tokens, len, index, types, types_len, parse_unary);
 }
 
 Expression_t* parse_term(Token_t* tokens, size_t len, size_t* index) {
@@ -188,7 +188,7 @@ Expression_t* parse_term(Token_t* tokens, size_t len, size_t* index) {
     }
     types[0] = TokenType_Plus;
     types[1] = TokenType_Minus;
-    return parse_binary(tokens, len, index, types, types_len, false, 0, parse_factor);
+    return parse_binary(tokens, len, index, types, types_len, parse_factor);
 }
 
 Expression_t* parse_comparison(Token_t* tokens, size_t len, size_t* index) {
@@ -202,7 +202,7 @@ Expression_t* parse_comparison(Token_t* tokens, size_t len, size_t* index) {
     types[1] = TokenType_GreaterEqual;
     types[2] = TokenType_Lesser;
     types[3] = TokenType_LesserEqual;
-    return parse_binary(tokens, len, index, types, types_len, false, 0, parse_term);
+    return parse_binary(tokens, len, index, types, types_len, parse_term);
 }
 
 Expression_t* parse_eq_neq(Token_t* tokens, size_t len, size_t* index) {
@@ -215,7 +215,7 @@ Expression_t* parse_eq_neq(Token_t* tokens, size_t len, size_t* index) {
     types[0] = TokenType_EqualEqual;
     types[1] = TokenType_BangEqual;
     return parse_binary(
-        tokens, len, index, types, types_len, true, TokenType_BoolV, parse_comparison
+        tokens, len, index, types, types_len, parse_comparison
     );
 }
 
@@ -229,7 +229,7 @@ Expression_t* parse_and_or(Token_t* tokens, size_t len, size_t* index) {
     types[0] = TokenType_And;
     types[1] = TokenType_Or;
     return parse_binary(
-        tokens, len, index, types, types_len, true, TokenType_BoolV, parse_eq_neq
+        tokens, len, index, types, types_len, parse_eq_neq
     );
 }
 
