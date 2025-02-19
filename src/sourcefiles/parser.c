@@ -1,6 +1,6 @@
 #include <stdio.h>
-#include <inttypes.h>
 
+#include "numtypes.h"
 #include "parser.h"
 #include "expression.h"
 #include "token.h"
@@ -48,14 +48,14 @@ Expression_t* parse_primary(Token_t* tokens, size_t len, size_t* index) {
             token = tokens[*index];
 
             if (token.type != TokenType_RightParen) {
-                printf("Expected left paren after expression on line %" PRIuMAX "\n", token.line);
+                printf("Expected left paren after expression on line %" PRIu "\n", token.line);
                 return NULL;
             }
             advance(len, index);
 
             return expr;
         default:
-            printf("Expected primary on line %" PRIuMAX "\n", token.line);
+            printf("Expected primary on line %" PRIu "\n", token.line);
             return NULL;
     }
 
@@ -145,7 +145,7 @@ Expression_t* parse_binary(
             print_token_type(t1);
             printf(" and ");
             print_token_type(t2);
-            printf("on line %" PRIuMAX "\n", token.line);
+            printf("on line %" PRIu "\n", token.line);
             return NULL;
         }
         bin->type = t1;

@@ -1,6 +1,6 @@
 #include <stdio.h>
-#include <inttypes.h>
 
+#include "numtypes.h"
 #include "bytecode.h"
 #include "compiler.h"
 #include "expression.h"
@@ -45,7 +45,7 @@ int compile_unary(Compiler_t* compiler, EV_Unary_t* unary, size_t line) {
         default:
             printf("Unexpected token (= ");
             print_token_type(unary->operator);
-            printf(") in a unary on line %" PRIuMAX "\n", line);
+            printf(") in a unary on line %" PRIu "\n", line);
             return 1;
     }
     push_chunk(&compiler->bytecode, (void*)(&instr), sizeof(Instruction_t));
@@ -104,7 +104,7 @@ int compile_binary(Compiler_t* compiler, EV_Binary_t* bin, size_t line) {
         default:
             printf("Unexpected token (= ");
             print_token_type(bin->operator.type);
-            printf(") in a binary on line %" PRIuMAX "\n", line);
+            printf(") in a binary on line %" PRIu "\n", line);
             return 1;
     }
     push_chunk(&compiler->bytecode, (void*)(&instr), sizeof(Instruction_t));
@@ -140,10 +140,6 @@ int compile_expression(Compiler_t* compiler, Expression_t* expr) {
             int res = compile_binary(compiler, expr->value.binary, expr->line);
             if (res == 1) { return res; }
             break;
-        }
-        default: {
-            printf("TODO 01: handle more expression types: compiler.c\n");
-            return 1;
         }
     }
     return 0;

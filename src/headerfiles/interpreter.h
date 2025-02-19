@@ -5,8 +5,6 @@
  *
  * */
 
-// TODO: add support for 32-bit sytems (automatically??)
-
 #ifndef INTERPRETER_H
 #define INTERPRETER_H
 

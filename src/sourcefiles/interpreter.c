@@ -1,15 +1,15 @@
 #include <stdio.h>
-#include <inttypes.h>
 
 #include "interpreter.h"
 #include "bytecode.h"
 #include "token.h"
+#include "numtypes.h"
 
 Instruction_t read_instruction(Interpreter_t* inter);
 int exec_instr(Instruction_t instr, Interpreter_t* inter);
 Literal_t read_number(Interpreter_t* inter);
 int set_stack(Stack_t* stack, size_t index, Literal_t element);
-Literal_t get_elem(Interpreter_t* inter, int64_t pos);
+Literal_t get_elem(Interpreter_t* inter, int_t pos);
 int exec_binary(
     Interpreter_t* inter, int16_t flags,
     Literal_t (*operation)(Literal_t, Literal_t) // higher order function
@@ -52,7 +52,7 @@ int interpret(Interpreter_t interpreter) {
     printf("stack:\n");
     for (size_t i = 0; i < interpreter.stack.capacity; i++) {
         Literal_t sd = interpreter.stack.data[i];
-        printf("  %" PRIx64 "; %f; %" PRId64 ",\n", sd.i, sd.f, sd.i);
+        printf("  %" PRIx "; %f; %" PRId ",\n", sd.i, sd.f, sd.i);
     }
 
     return 0;
@@ -100,7 +100,7 @@ int exec_instr(Instruction_t instr, Interpreter_t* inter) {
             switch (extract_addressing_mode(flags)) {
                 case ADDRESSING_MODE_DIRECT:   num = op2; break;
                 case ADDRESSING_MODE_INDIRECT: num = get_elem(inter, op2.i); break;
-                default: printf("(unreachable) unkown addressing mode!\n"); return 1; break;
+                default: printf("(unreachable) unknown addressing mode!\n"); return 1; break;
             }
             int res = set_stack(&inter->stack, (size_t)op1.i, num);
             if (res == 1) { return res; }
@@ -134,7 +134,7 @@ int exec_instr(Instruction_t instr, Interpreter_t* inter) {
         case Instruction_Lqt: { BIN(lqt_i, lqt_f) } 
         case Instruction_Gqt: { BIN(gqt_i, gqt_f) } 
         default:
-            printf("TODO: instruction %d not programmed yet!\n", instr);
+            printf("Unknown instruction: %d not programmed yet!\n", instr);
             return 1;
             break;
     }
@@ -152,16 +152,16 @@ int exec_binary(
     switch (extract_addressing_mode(flags)) {
         case ADDRESSING_MODE_DIRECT: num = operation(get_elem(inter, op1.i), op2); break;
         case ADDRESSING_MODE_INDIRECT: num = operation(get_elem(inter, op1.i), get_elem(inter, op2.i)); break;
-        default: printf("(unreachable) unkown addressing mode!\n"); return 1; break;
+        default: printf("(unreachable) unknown addressing mode!\n"); return 1; break;
     }
     int res = set_stack(&inter->stack, (size_t)op1.i, num);
     return res;
 }
 
 Literal_t read_number(Interpreter_t* inter) {
-    int64_t num = 0;
+    int_t num = 0;
     for (size_t i = 0; i < sizeof(Literal_t); i++) {
-        num = num | ((int64_t)inter->code[inter->instr_ptr + i] << (i * 8));
+        num = num | ((int_t)inter->code[inter->instr_ptr + i] << (i * 8));
     }
     inter->instr_ptr += sizeof(Literal_t);
     return (Literal_t){num};
@@ -176,7 +176,7 @@ Instruction_t read_instruction(Interpreter_t* inter) {
     return (Instruction_t)instruction;
 }
 
-Literal_t get_elem(Interpreter_t* inter, int64_t pos) {
+Literal_t get_elem(Interpreter_t* inter, int_t pos) {
     return inter->stack.data[(size_t)pos];
 }
 
