@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <inttypes.h>
 
+#include "numtypes.h"
 #include "string_utils.h"
 #include "bytecode.h"
 #include "compiler.h"
@@ -39,6 +39,8 @@ int main(int argc, char* argv[]) {
 }
 
 int compile_program(char* filename, char* output_filename) {
+    printf("Compiling for %s\n", ARCH);
+
     // reading the file
     String_t file = read_file_to_string(filename, "r");
     if (file.chars == NULL) {
@@ -114,6 +116,8 @@ int compile_program(char* filename, char* output_filename) {
 }
 
 int run_program(char* filename) {
+    printf("Running program in %s\n", ARCH);
+
     // read file
     String_t file = read_file_to_string(filename, "rb");
     if (file.chars == NULL) {
@@ -141,7 +145,7 @@ int run_program(char* filename) {
 void print_literal(TokenType_t type, Literal_t* lit) {
     switch (type) {
         case TokenType_IntV:
-            printf("%" PRId64 "", lit->i);
+            printf("%" PRId "", lit->i);
             break;
         case TokenType_FloatV:
             printf("%f", lit->f);

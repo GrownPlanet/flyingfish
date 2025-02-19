@@ -10,8 +10,8 @@
 
 #include <stdbool.h>
 #include <stdlib.h>
-#include <stdint.h>
 
+#include "numtypes.h"
 #include "string_utils.h"
 
 typedef enum {
@@ -35,8 +35,8 @@ typedef enum {
 } TokenType_t;
 
 typedef union {
-    int64_t i;
-    double f;
+    int_t i;
+    float_t f;
     String_t* s;
     char c;
     bool b;

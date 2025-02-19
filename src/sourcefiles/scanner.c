@@ -2,8 +2,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <inttypes.h>
 
+#include "numtypes.h"
 #include "array_utils.h"
 #include "scanner.h"
 
@@ -147,7 +147,7 @@ ScanResult_t scan(String_t input) {
 
                 i++;
                 if (input.chars[i] != '\'') {
-                    printf("Expected `'` after char on line %" PRIuMAX "\n", line);
+                    printf("Expected `'` after char on line %" PRIu "\n", line);
                     had_error = true;
                     i--;
                 }
@@ -201,7 +201,7 @@ ScanResult_t scan(String_t input) {
                     break;
                 }
 
-                printf("Unexpected character (= %c) on line %" PRIuMAX "\n", ch, line);
+                printf("Unexpected character (= %c) on line %" PRIu "\n", ch, line);
                 had_error = true;
                 break;
         }
@@ -371,7 +371,7 @@ String_t* extract_string(String_t input, size_t* index, size_t line) {
         push((void**)&str, &s_len, &s_capacity, sizeof(char), &input.chars[*index]);
         (*index)++;
         if (*index >= input.len) {
-            printf("Expected `\"` after string on line %" PRIuMAX "\n", line);
+            printf("Expected `\"` after string on line %" PRIu "\n", line);
             return NULL;
         }
     }
