@@ -21,6 +21,11 @@ int compile_program(char* filename, char* output_filename);
 int run_program(char* filename);
 
 int main(int argc, char* argv[]) {
+    if (strcmp(ARCH, "unknown") == 0) {
+        printf("Unknown architecture!\n");
+        return 1;
+    }
+
     if (argc != 3) {
         print_help_menu(argv[0]);
         return 1;
