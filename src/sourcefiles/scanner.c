@@ -239,6 +239,7 @@ Token_t keyword_to_token(String_t* identifier, size_t line) {
         (String_t) { .chars = "char", .len = 4 },
         (String_t) { .chars = "string", .len = 6 },
         (String_t) { .chars = "bool", .len = 4 },
+        (String_t) { .chars = "print", .len = 5 },
     };
 
     TokenType_t values[] = {
@@ -253,6 +254,7 @@ Token_t keyword_to_token(String_t* identifier, size_t line) {
         TokenType_CharT,
         TokenType_StringT,
         TokenType_BoolT,
+        TokenType_Print,
     };
 
     size_t len = sizeof(keys) / sizeof(String_t);

@@ -3,14 +3,22 @@
 #include "numtypes.h"
 #include "parser.h"
 #include "expression.h"
+#include "statement.h"
 #include "token.h"
 
-void advance(size_t len, size_t* index);
-Expression_t* parse(ScanResult_t tokens);
-Expression_t* parse_term(Token_t* tokens, size_t len, size_t* index);
+typedef struct {
+    Token_t* tokens;
+    size_t len;
+    size_t index;
+} Parser_t;
 
-Expression_t* parse_primary(Token_t* tokens, size_t len, size_t* index) {
-    Token_t token = tokens[*index];
+void advance(Parser_t* parser);
+Expression_t* parse(ScanResult_t tokens);
+Expression_t* parse_term(Parser_t* parser);
+
+Expression_t* parse_primary(Parser_t* parser) {
+    // literal
+    Token_t token = parser->tokens[parser->index];
 
     Expression_t* expr = (Expression_t*)malloc(sizeof(Expression_t));
     if (expr == NULL) {
@@ -39,19 +47,19 @@ Expression_t* parse_primary(Token_t* tokens, size_t len, size_t* index) {
             ExpressionValue_t v;
             v.literal = lit;
             expr->value = v;
-            advance(len, index);
+            advance(parser);
             break;
         case TokenType_LeftParen:
-            advance(len, index);
-            Expression_t* expr = parse_term(tokens, len, index);
+            advance(parser);
+            Expression_t* expr = parse_term(parser);
 
-            token = tokens[*index];
+            token = parser->tokens[parser->index];
 
             if (token.type != TokenType_RightParen) {
                 printf("Expected left paren after expression on line %" PRIu "\n", token.line);
                 return NULL;
             }
-            advance(len, index);
+            advance(parser);
 
             return expr;
         default:
@@ -62,11 +70,12 @@ Expression_t* parse_primary(Token_t* tokens, size_t len, size_t* index) {
     return expr;
 }
 
-Expression_t* parse_unary(Token_t* tokens, size_t len, size_t* index) {
-    Token_t token = tokens[*index];
+Expression_t* parse_unary(Parser_t* parser) {
+    // -[primary]
+    Token_t token = parser->tokens[parser->index];
 
     if (token.type == TokenType_Bang || token.type == TokenType_Minus) {
-        advance(len, index);
+        advance(parser);
 
         Expression_t* expr = (Expression_t*)malloc(sizeof(Expression_t));
         if (expr == NULL) {
@@ -84,7 +93,7 @@ Expression_t* parse_unary(Token_t* tokens, size_t len, size_t* index) {
         }
         un->operator = token.type;
 
-        Expression_t* operant = parse_primary(tokens, len, index);
+        Expression_t* operant = parse_primary(parser);
         if (operant == NULL) {
             return NULL;
         }
@@ -99,16 +108,16 @@ Expression_t* parse_unary(Token_t* tokens, size_t len, size_t* index) {
         return expr;
     }
 
-    return parse_primary(tokens, len, index);
+    return parse_primary(parser);
 }
 
 Expression_t* parse_binary(
-    Token_t* tokens, size_t len, size_t* index, TokenType_t* types, size_t types_len,
-    Expression_t* (*base_func)(Token_t*, size_t, size_t*) // higher order function
+    Parser_t* parser, TokenType_t* types, size_t types_len,
+    Expression_t* (*base_func)(Parser_t* parser) // higher order function
 ) {
-    Expression_t* expr = base_func(tokens, len, index);
+    Expression_t* expr = base_func(parser);
 
-    Token_t token = tokens[*index];
+    Token_t token = parser->tokens[parser->index];
     bool running = false;
     for (size_t i = 0; i < types_len; i++) {
         running |= token.type == types[i];
@@ -132,11 +141,11 @@ Expression_t* parse_binary(
         bin->left = *expr;
         bin->operator = token;
 
-        advance(len, index);
-        token = tokens[*index];
+        advance(parser);
+        token = parser->tokens[parser->index];
 
-        bin->right = *base_func(tokens, len, index);
-        token = tokens[*index];
+        bin->right = *base_func(parser);
+        token = parser->tokens[parser->index];
 
         TokenType_t t1 = get_expression_type(expr);
         TokenType_t t2 = get_expression_type(&bin->right);
@@ -166,7 +175,8 @@ Expression_t* parse_binary(
 
 }
 
-Expression_t* parse_factor(Token_t* tokens, size_t len, size_t* index) {
+Expression_t* parse_factor(Parser_t* parser) {
+    // * or /
     size_t types_len = 2;
     TokenType_t* types = (TokenType_t*)malloc(sizeof(TokenType_t) * types_len );
     if (types == NULL) {
@@ -176,10 +186,11 @@ Expression_t* parse_factor(Token_t* tokens, size_t len, size_t* index) {
     types[0] = TokenType_Star;
     types[1] = TokenType_Slash;
 
-    return parse_binary(tokens, len, index, types, types_len, parse_unary);
+    return parse_binary(parser, types, types_len, parse_unary);
 }
 
-Expression_t* parse_term(Token_t* tokens, size_t len, size_t* index) {
+Expression_t* parse_term(Parser_t* parser) {
+    // + or -
     size_t types_len = 2;
     TokenType_t* types = (TokenType_t*)malloc(sizeof(TokenType_t) * types_len);
     if (types == NULL) {
@@ -188,10 +199,11 @@ Expression_t* parse_term(Token_t* tokens, size_t len, size_t* index) {
     }
     types[0] = TokenType_Plus;
     types[1] = TokenType_Minus;
-    return parse_binary(tokens, len, index, types, types_len, parse_factor);
+    return parse_binary(parser, types, types_len, parse_factor);
 }
 
-Expression_t* parse_comparison(Token_t* tokens, size_t len, size_t* index) {
+Expression_t* parse_comparison(Parser_t* parser) {
+    // > or >= or < or <=
     size_t types_len = 4;
     TokenType_t* types = (TokenType_t*)malloc(sizeof(TokenType_t) * types_len);
     if (types == NULL) {
@@ -202,10 +214,11 @@ Expression_t* parse_comparison(Token_t* tokens, size_t len, size_t* index) {
     types[1] = TokenType_GreaterEqual;
     types[2] = TokenType_Lesser;
     types[3] = TokenType_LesserEqual;
-    return parse_binary(tokens, len, index, types, types_len, parse_term);
+    return parse_binary(parser, types, types_len, parse_term);
 }
 
-Expression_t* parse_eq_neq(Token_t* tokens, size_t len, size_t* index) {
+Expression_t* parse_eq_neq(Parser_t* parser) {
+    // == or !=
     size_t types_len = 2;
     TokenType_t* types = (TokenType_t*)malloc(sizeof(TokenType_t) * types_len);
     if (types == NULL) {
@@ -214,12 +227,11 @@ Expression_t* parse_eq_neq(Token_t* tokens, size_t len, size_t* index) {
     }
     types[0] = TokenType_EqualEqual;
     types[1] = TokenType_BangEqual;
-    return parse_binary(
-        tokens, len, index, types, types_len, parse_comparison
-    );
+    return parse_binary(parser, types, types_len, parse_comparison);
 }
 
-Expression_t* parse_and_or(Token_t* tokens, size_t len, size_t* index) {
+Expression_t* parse_expr(Parser_t* parser) {
+    // && or ||
     size_t types_len = 2;
     TokenType_t* types = (TokenType_t*)malloc(sizeof(TokenType_t) * types_len);
     if (types == NULL) {
@@ -228,18 +240,34 @@ Expression_t* parse_and_or(Token_t* tokens, size_t len, size_t* index) {
     }
     types[0] = TokenType_And;
     types[1] = TokenType_Or;
-    return parse_binary(
-        tokens, len, index, types, types_len, parse_eq_neq
-    );
+    return parse_binary(parser, types, types_len, parse_eq_neq);
+}
+
+Statement_t* parse_print() {}
+
+Statement_t* parse_statement(Parser_t* parser) {
+    Token_t token = parser->tokens[parser->index];
+    switch (token) {
+        case TokenType_Print:
+            return parse_print(parser);
+        default: 
+            printf("Statement %d implemented yet!\n", token);
+            return NULL;
+    }
 }
 
 Expression_t* parse(ScanResult_t tokens) {
-    size_t index = 0;
-    return parse_and_or(tokens.tokens, tokens.len, &index);
+    Parser_t parser = {
+        .tokens = tokens.tokens,
+        .len = tokens.len,
+        .index = 0,
+    };
+
+    return parse_expr(&parser);
 }
 
-void advance(size_t len, size_t* index) {
-    if (*index < len) {
-        (*index)++;
+void advance(Parser_t* parser) {
+    if (parser->index < parser->len) {
+        (parser->index)++;
     }
 }

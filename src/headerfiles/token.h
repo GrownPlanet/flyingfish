@@ -30,8 +30,9 @@ typedef enum {
     TokenType_BoolV,
     // types (27 - 31)
     TokenType_IntT, TokenType_FloatT, TokenType_CharT, TokenType_StringT, TokenType_BoolT,
-    // keywoards (32 - 37)
+    // keywoards (32 - 38)
     TokenType_If, TokenType_Else, TokenType_Func, TokenType_For, TokenType_Return, TokenType_While,
+    TokenType_Print,
 } TokenType_t;
 
 typedef union {

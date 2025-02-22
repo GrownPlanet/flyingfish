@@ -53,6 +53,7 @@ void print_token_type(TokenType_t token_type) {
         case TokenType_For: printf("For"); break;
         case TokenType_Return: printf("Return"); break;
         case TokenType_While: printf("While"); break;
+        case TokenType_Print: printf("Print"); break;
         default: printf("ERR: %d", token_type);
     }
 }
