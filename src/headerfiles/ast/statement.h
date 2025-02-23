@@ -39,7 +39,9 @@ typedef struct {
 } Statement_t;
 
 struct ST_Print_t {
-    Expression_t expr;
+    Expression_t* expr;
 };
+
+void free_statement(Statement_t* expr);
 
 #endif // STATEMENT_H

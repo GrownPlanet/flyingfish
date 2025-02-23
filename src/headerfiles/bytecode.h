@@ -28,6 +28,7 @@ typedef enum {
     Instruction_Grt,
     Instruction_Lqt,
     Instruction_Gqt,
+    Instruction_Pri,
 } Instruction_t;
 
 
@@ -35,7 +36,8 @@ typedef enum {
 #define ADDRESSING_MODE_DIRECT   0 // 0b0
 #define ADDRESSING_MODE_INDIRECT 1 // 0b1
 
-#define TYPE_PART   7 << 1 // 0b111
+#define TYPE_PART   7 << 1 // 0b1110
+
 #define TYPE_INT    0 << 1 // 0b000
 #define TYPE_FLOAT  1 << 1 // 0b001
 #define TYPE_CHAR   2 << 1 // 0b010

@@ -9,8 +9,8 @@
 #define COMPILER_H
 
 #include "bytecode.h"
-#include "expression.h"
+#include "statement.h"
 
-ByteCode_t compile(Expression_t* expr);
+ByteCode_t compile(Statement_t* stmt);
 
 #endif // COMPILER_H

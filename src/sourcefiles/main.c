@@ -8,6 +8,7 @@
 #include "compiler.h"
 #include "emitter.h"
 #include "expression.h"
+#include "statement.h"
 #include "file_utils.h"
 #include "scanner.h"
 #include "token.h"
@@ -15,7 +16,7 @@
 #include "interpreter.h"
 
 void print_literal(TokenType_t type, Literal_t* lit);
-void print_expression(Expression_t* expression);
+void print_statement(Statement_t* stmt);
 void print_help_menu(char* pathname);
 int compile_program(char* filename, char* output_filename);
 int run_program(char* filename);
@@ -76,22 +77,23 @@ int compile_program(char* filename, char* output_filename) {
 
     // parsing tokens
     printf("ast:\n");
-    Expression_t* expr = parse(tokens);
+    Statement_t* stmt = parse(tokens);
 
-    if (expr == NULL) {
+    if (stmt == NULL) {
         free_tokens(tokens);
         return 1;
     }
 
-    print_expression(expr);
+    print_statement(stmt);
+
     printf("\n\nbytecode:\n");
 
     // compiling the syntax tree
-    ByteCode_t bytecode = compile(expr);
+    ByteCode_t bytecode = compile(stmt);
 
     if (bytecode.had_error) {
         free_tokens(tokens);
-        free_expression(expr);
+        free_statement(stmt);
         free(bytecode.chunks);
         return 1;
     }
@@ -104,8 +106,9 @@ int compile_program(char* filename, char* output_filename) {
     // emmitter
     const int res = emit(&bytecode, output_filename);
     if (res == 1) {
+        free(file.chars);
         free_tokens(tokens);
-        free_expression(expr);
+        free_statement(stmt);
         free(bytecode.chunks);
         return 1;
     }
@@ -113,8 +116,7 @@ int compile_program(char* filename, char* output_filename) {
     // freeing data
     free(file.chars);
     free_tokens(tokens);
-    free_expression(expr);
-    free(expr);
+    free_statement(stmt);
     free(bytecode.chunks);
 
     return 0;
@@ -124,6 +126,7 @@ int run_program(char* filename) {
     printf("Running program in %s\n", ARCH);
 
     // read file
+    printf("bytecode:\n");
     String_t file = read_file_to_string(filename, "rb");
     if (file.chars == NULL) {
         printf("Error reading file!\n");
@@ -207,7 +210,9 @@ void print_expression(Expression_t* expr) {
         case ExpressionType_Binary: {
             EV_Binary_t* bin = expr->value.binary;
             printf("(");
-            print_token_type(bin->type);
+            print_token_type(bin->in_type);
+            printf(" -> ");
+            print_token_type(bin->out_type);
             printf(" ");
             print_expression(&bin->left);
             printf(" ");
@@ -216,6 +221,17 @@ void print_expression(Expression_t* expr) {
             print_expression(&bin->right);
             printf(")");
             break;
+        }
+    }
+}
+
+void print_statement(Statement_t* stmt) {
+    switch (stmt->type) {
+        case StatementType_Print: {
+            ST_Print_t* pr = stmt->value.print;
+            printf("(Print ");
+            print_expression(pr->expr);
+            printf(")");
         }
     }
 }

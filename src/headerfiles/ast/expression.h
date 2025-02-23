@@ -36,7 +36,8 @@ struct EV_Binary_t {
     Expression_t left;
     Token_t operator;
     Expression_t right;
-    TokenType_t type;
+    TokenType_t in_type;
+    TokenType_t out_type;
 };
 
 struct EV_Unary_t {
@@ -51,6 +52,7 @@ struct EV_Literal_t {
 };
 
 void free_expression(Expression_t* expr);
-TokenType_t get_expression_type(Expression_t* expr);
+TokenType_t get_expression_in_type(Expression_t* expr);
+TokenType_t get_expression_out_type(Expression_t* expr);
 
 #endif // EXPRESSION_H

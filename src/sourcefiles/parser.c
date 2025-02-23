@@ -13,7 +13,6 @@ typedef struct {
 } Parser_t;
 
 void advance(Parser_t* parser);
-Expression_t* parse(ScanResult_t tokens);
 Expression_t* parse_term(Parser_t* parser);
 
 Expression_t* parse_primary(Parser_t* parser) {
@@ -56,7 +55,7 @@ Expression_t* parse_primary(Parser_t* parser) {
             token = parser->tokens[parser->index];
 
             if (token.type != TokenType_RightParen) {
-                printf("Expected left paren after expression on line %" PRIu "\n", token.line);
+                printf("Expected right paren after expression on line %" PRIu "\n", token.line);
                 return NULL;
             }
             advance(parser);
@@ -71,7 +70,7 @@ Expression_t* parse_primary(Parser_t* parser) {
 }
 
 Expression_t* parse_unary(Parser_t* parser) {
-    // -[primary]
+    // -[unary | primary]
     Token_t token = parser->tokens[parser->index];
 
     if (token.type == TokenType_Bang || token.type == TokenType_Minus) {
@@ -93,13 +92,13 @@ Expression_t* parse_unary(Parser_t* parser) {
         }
         un->operator = token.type;
 
-        Expression_t* operant = parse_primary(parser);
+        Expression_t* operant = parse_unary(parser);
         if (operant == NULL) {
             return NULL;
         }
         un->operant = *operant;
 
-        un->type = get_expression_type(operant);
+        un->type = get_expression_out_type(operant);
 
         ExpressionValue_t v;
         v.unary = un;
@@ -113,6 +112,7 @@ Expression_t* parse_unary(Parser_t* parser) {
 
 Expression_t* parse_binary(
     Parser_t* parser, TokenType_t* types, size_t types_len,
+    bool changetype, TokenType_t changetypeto,
     Expression_t* (*base_func)(Parser_t* parser) // higher order function
 ) {
     Expression_t* expr = base_func(parser);
@@ -147,8 +147,8 @@ Expression_t* parse_binary(
         bin->right = *base_func(parser);
         token = parser->tokens[parser->index];
 
-        TokenType_t t1 = get_expression_type(expr);
-        TokenType_t t2 = get_expression_type(&bin->right);
+        TokenType_t t1 = get_expression_out_type(expr);
+        TokenType_t t2 = get_expression_out_type(&bin->right);
         if (t1 != t2) {
             printf("Types do operations with ");
             print_token_type(t1);
@@ -157,7 +157,8 @@ Expression_t* parse_binary(
             printf("on line %" PRIu "\n", token.line);
             return NULL;
         }
-        bin->type = t1;
+        bin->in_type = t1;
+        bin->out_type = changetype ? changetypeto : t1;
 
         ExpressionValue_t v;
         v.binary = bin;
@@ -186,7 +187,7 @@ Expression_t* parse_factor(Parser_t* parser) {
     types[0] = TokenType_Star;
     types[1] = TokenType_Slash;
 
-    return parse_binary(parser, types, types_len, parse_unary);
+    return parse_binary(parser, types, types_len, false, 0, parse_unary);
 }
 
 Expression_t* parse_term(Parser_t* parser) {
@@ -199,7 +200,7 @@ Expression_t* parse_term(Parser_t* parser) {
     }
     types[0] = TokenType_Plus;
     types[1] = TokenType_Minus;
-    return parse_binary(parser, types, types_len, parse_factor);
+    return parse_binary(parser, types, types_len, false, 0, parse_factor);
 }
 
 Expression_t* parse_comparison(Parser_t* parser) {
@@ -214,7 +215,7 @@ Expression_t* parse_comparison(Parser_t* parser) {
     types[1] = TokenType_GreaterEqual;
     types[2] = TokenType_Lesser;
     types[3] = TokenType_LesserEqual;
-    return parse_binary(parser, types, types_len, parse_term);
+    return parse_binary(parser, types, types_len, true, TokenType_BoolV, parse_term);
 }
 
 Expression_t* parse_eq_neq(Parser_t* parser) {
@@ -227,7 +228,7 @@ Expression_t* parse_eq_neq(Parser_t* parser) {
     }
     types[0] = TokenType_EqualEqual;
     types[1] = TokenType_BangEqual;
-    return parse_binary(parser, types, types_len, parse_comparison);
+    return parse_binary(parser, types, types_len, true, TokenType_BoolV, parse_comparison);
 }
 
 Expression_t* parse_expr(Parser_t* parser) {
@@ -240,30 +241,67 @@ Expression_t* parse_expr(Parser_t* parser) {
     }
     types[0] = TokenType_And;
     types[1] = TokenType_Or;
-    return parse_binary(parser, types, types_len, parse_eq_neq);
+    return parse_binary(parser, types, types_len, true, TokenType_BoolV, parse_eq_neq);
 }
 
-Statement_t* parse_print() {}
+Statement_t* parse_print(Parser_t* parser) {
+    advance(parser);
+    Token_t token = parser->tokens[parser->index];
+    if (token.type != TokenType_LeftParen) {
+        printf("Expected left paren after 'print' on line %" PRIu "\n", token.line);
+        return NULL;
+    }
+    advance(parser);
+
+    Statement_t* stmt = (Statement_t*)malloc(sizeof(Statement_t));
+    stmt->type = StatementType_Print;
+
+    ST_Print_t* print = (ST_Print_t*)malloc(sizeof(ST_Print_t));
+    print->expr = parse_expr(parser);
+
+    StatementValue_t v;
+    v.print = print;
+    stmt->value = v;
+
+    token = parser->tokens[parser->index];
+    if (token.type != TokenType_RightParen) {
+        printf("Expected right paren after print statement on line %" PRIu "\n", token.line);
+        return NULL;
+    }
+    advance(parser);
+
+    token = parser->tokens[parser->index];
+    if (token.type != TokenType_Semicolon) {
+        printf("Expected semicolon after print statement on line %" PRIu "\n", token.line);
+        return NULL;
+    }
+    advance(parser);
+    
+    return stmt;
+}
 
 Statement_t* parse_statement(Parser_t* parser) {
     Token_t token = parser->tokens[parser->index];
-    switch (token) {
-        case TokenType_Print:
-            return parse_print(parser);
+    Statement_t* stmt;
+
+    switch (token.type) {
+        case TokenType_Print: stmt = parse_print(parser); break;
         default: 
-            printf("Statement %d implemented yet!\n", token);
-            return NULL;
+            printf("Statement %d implemented yet!\n", token.type);
+            stmt = NULL;
     }
+
+    return stmt;
 }
 
-Expression_t* parse(ScanResult_t tokens) {
+Statement_t* parse(ScanResult_t tokens) {
     Parser_t parser = {
         .tokens = tokens.tokens,
         .len = tokens.len,
         .index = 0,
     };
 
-    return parse_expr(&parser);
+    return parse_statement(&parser);
 }
 
 void advance(Parser_t* parser) {

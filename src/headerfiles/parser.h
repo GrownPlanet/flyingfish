@@ -8,9 +8,9 @@
 #ifndef PARSER_H
 #define PARSER_H
 
-#include "expression.h"
+#include "statement.h"
 #include "scanner.h"
 
-Expression_t* parse(ScanResult_t tokens);
+Statement_t* parse(ScanResult_t tokens);
 
 #endif // PARSER_H

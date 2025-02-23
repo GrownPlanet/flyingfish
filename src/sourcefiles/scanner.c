@@ -31,7 +31,7 @@ ScanResult_t scan(String_t input) {
 
     size_t t_capacity = 1;
     size_t t_len = 0;
-    size_t line = 0;
+    size_t line = 1;
 
     for (size_t i = 0; i < input.len; i++) {
         char ch = input.chars[i];

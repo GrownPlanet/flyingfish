@@ -4,6 +4,7 @@
 #include "bytecode.h"
 #include "compiler.h"
 #include "expression.h"
+#include "statement.h"
 
 typedef struct {
     ByteCode_t bytecode;
@@ -110,7 +111,7 @@ int compile_binary(Compiler_t* compiler, EV_Binary_t* bin, size_t line) {
     push_chunk(&compiler->bytecode, (void*)(&instr), sizeof(Instruction_t));
 
     // FLAGS
-    TokenType_t t = bin->type;
+    TokenType_t t = bin->in_type;
     const int16_t flags = tokentype_to_flag(t) | ADDRESSING_MODE_INDIRECT;
     push_chunk(&compiler->bytecode, (void*)(&flags), sizeof(int16_t));
 
@@ -145,7 +146,43 @@ int compile_expression(Compiler_t* compiler, Expression_t* expr) {
     return 0;
 }
 
-ByteCode_t compile(Expression_t* expr) {
+int compile_print(Compiler_t* compiler, ST_Print_t* print) {
+    compile_expression(compiler, print->expr);
+
+    // INSTR PRI
+    push_chunk(
+        &compiler->bytecode,
+        (void*)(&(Instruction_t){ Instruction_Pri }),
+        sizeof(Instruction_t)
+    );
+
+    // FLAGS
+    int16_t flags = tokentype_to_flag(get_expression_out_type(print->expr));
+    if (flags == -1) { return 1; }
+    flags |= ADDRESSING_MODE_INDIRECT;
+    push_chunk(&compiler->bytecode, (void*)(&flags), sizeof(int16_t));
+
+    // ARG1
+    push_chunk(&compiler->bytecode, (void*)(&compiler->stack_pointer), sizeof(size_t));
+
+    return 0;
+}
+
+int compile_statement(Compiler_t* compiler, Statement_t* stmt) {
+    switch (stmt->type) {
+        case StatementType_Print: {
+            int res = compile_print(compiler, stmt->value.print);
+            if (res == 1) { return res; }
+            break;
+        }
+        default: 
+            printf("Unknown statement type: %d\n", stmt->type);
+            return 1;
+    }
+    return 0;
+}
+
+ByteCode_t compile(Statement_t* stmt) {
     unsigned char* data = (unsigned char*)malloc(sizeof(unsigned char));
 
     ByteCode_t bytecode = {
@@ -159,7 +196,8 @@ ByteCode_t compile(Expression_t* expr) {
         .stack_pointer = 0,
     };
 
-    int res = compile_expression(&compiler, expr);
+    // int res = compile_expression(&compiler, expr);
+    int res = compile_statement(&compiler, stmt);
     if (res == 1) { compiler.bytecode.had_error = true; }
 
     return compiler.bytecode;

@@ -18,17 +18,6 @@ int16_t read_flags(Interpreter_t* inter);
 int16_t extract_addressing_mode(int16_t flags);
 int16_t extract_type(int16_t flags);
 
-#define BIN(f_i, f_f)\
-    const int16_t flags = read_flags(inter);\
-    int res = 0;\
-    switch (extract_type(flags)) {\
-        case TYPE_INT: { res |= exec_binary(inter, flags, f_i); break; }\
-        case TYPE_FLOAT: { res |= exec_binary(inter, flags, f_f); break; }\
-        default: { printf("Wrong type for instruction: %d\n", extract_type(flags)); res |= 1; };\
-    }\
-    if (res == 1) { return res; }\
-    break;
-
 Interpreter_t new_interpreter(unsigned char* code, size_t len) {
     Stack_t stack = {
         .data = (Literal_t*)malloc(sizeof(Literal_t)),
@@ -44,6 +33,7 @@ Interpreter_t new_interpreter(unsigned char* code, size_t len) {
 }
 
 int interpret(Interpreter_t interpreter) {
+    printf("output:\n");
     while (interpreter.instr_ptr < interpreter.len) {
         Instruction_t instr = read_instruction(&interpreter);
         int res = exec_instr(instr, &interpreter);
@@ -90,6 +80,18 @@ Literal_t lqt_f(Literal_t n1, Literal_t n2) { Literal_t s; s.f = (n1.f <= n2.f);
 Literal_t gqt_i(Literal_t n1, Literal_t n2) { Literal_t s; s.i = (n1.i >= n2.i); return s; }
 Literal_t gqt_f(Literal_t n1, Literal_t n2) { Literal_t s; s.f = (n1.f >= n2.f); return s; }
 
+#define BIN(f_i, f_f)\
+    const int16_t flags = read_flags(inter);\
+    int res = 0;\
+    switch (extract_type(flags)) {\
+        case TYPE_INT: { res |= exec_binary(inter, flags, f_i); break; }\
+        case TYPE_FLOAT: { res |= exec_binary(inter, flags, f_f); break; }\
+        default: { printf("Wrong type for instruction: %d\n", extract_type(flags)); res |= 1; };\
+    }\
+    if (res == 1) { return res; }\
+    break;
+
+
 int exec_instr(Instruction_t instr, Interpreter_t* inter) {
     switch (instr) {
         case Instruction_Mov: {
@@ -99,7 +101,7 @@ int exec_instr(Instruction_t instr, Interpreter_t* inter) {
 
             Literal_t num;
             switch (extract_addressing_mode(flags)) {
-                case ADDRESSING_MODE_DIRECT:   num = op2; break;
+                case ADDRESSING_MODE_DIRECT: num = op2; break;
                 case ADDRESSING_MODE_INDIRECT: num = get_elem(inter, op2.i); break;
                 default: printf("(unreachable) unknown addressing mode!\n"); return 1; break;
             }
@@ -116,12 +118,32 @@ int exec_instr(Instruction_t instr, Interpreter_t* inter) {
                 case TYPE_INT: { n.i = -get_elem(inter, op1.i).i; break; }
                 case TYPE_FLOAT: { n.f = -get_elem(inter, op1.f).f; break; }
                 default: {
-                    printf("Wrong type for instruction: %d\n", extract_type(flags)); res = 1;
+                    printf("Wrong type for instruction Neg: %d\n", extract_type(flags)); res = 1;
                 }
-                if (res == 1) { return res; }
             }
             res |= set_stack(&inter->stack, (size_t)op1.i, n);
             if (res == 1) { return res; }
+            break;
+        }
+        case Instruction_Pri: {
+            const int16_t flags = read_flags(inter);
+            Literal_t op1 = read_number(inter);
+            Literal_t num;
+
+            switch (extract_addressing_mode(flags)) {
+                case ADDRESSING_MODE_DIRECT: num = op1; break;
+                case ADDRESSING_MODE_INDIRECT: num = get_elem(inter, op1.i); break;
+                default: printf("(unreachable) unknown addressing mode!\n"); return 1; break;
+            }
+
+            switch (extract_type(flags)) {
+                case TYPE_INT: printf("%" PRId "\n", num.i); break;
+                case TYPE_FLOAT: printf("%f\n", num.f); break;
+                case TYPE_BOOL: printf("%s\n", num.b ? "true" : "false"); break;
+                default: {
+                    printf("Wrong type for instruction Pri: %d\n", extract_type(flags)); return 1;
+                }
+            }
             break;
         }
         case Instruction_Add: { BIN(add_i, add_f) }
