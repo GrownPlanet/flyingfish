@@ -41,6 +41,7 @@ typedef union {
     String_t* s;
     char c;
     bool b;
+    size_t s_t; // not a type a variable can be
 } Literal_t;
 
 typedef struct {

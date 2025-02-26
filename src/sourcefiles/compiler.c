@@ -14,7 +14,7 @@ typedef struct {
 int compile_expression(Compiler_t* compiler, Expression_t* expr);
 int16_t tokentype_to_flag(TokenType_t tokentype);
 
-void compile_literal(Compiler_t* compiler, EV_Literal_t* literal) {
+int compile_literal(Compiler_t* compiler, EV_Literal_t* literal) {
     // INSTR MOV
     push_chunk(
         &compiler->bytecode,
@@ -22,12 +22,35 @@ void compile_literal(Compiler_t* compiler, EV_Literal_t* literal) {
         sizeof(Instruction_t)
     );
     // FLAGS
-    const int16_t flags = ADDRESSING_MODE_DIRECT;
+    int16_t flags = tokentype_to_flag(literal->type);
+    if (flags == -1) { return 1; }
+    flags |= ADDRESSING_MODE_DIRECT;
     push_chunk(&compiler->bytecode, (void*)(&flags), sizeof(int16_t)); 
+    
     // ARG1
     push_chunk(&compiler->bytecode, (void*)(&compiler->stack_pointer), sizeof(Literal_t));
+
     // ARG2
-    push_chunk(&compiler->bytecode, (void*)literal->value, sizeof(Literal_t));
+    switch (literal->type) {
+        case TokenType_IntV:
+        case TokenType_FloatV:
+        case TokenType_BoolV:
+        case TokenType_CharV:
+            push_chunk(&compiler->bytecode, (void*)literal->value, sizeof(Literal_t));
+            break;
+        case TokenType_StringV: {
+            const String_t* s = literal->value->s;
+            push_chunk(&compiler->bytecode, (void*)(&s->len), sizeof(size_t));
+            push_chunk(&compiler->bytecode, (void*)s->chars, sizeof(char) * s->len);
+            break;
+        }
+        default:
+            printf("Illigal type for literal: %d\n", literal->type);
+            return 1;
+            break;
+    }
+
+    return 0;
 }
 
 int compile_unary(Compiler_t* compiler, EV_Unary_t* unary, size_t line) {
@@ -127,23 +150,16 @@ int compile_binary(Compiler_t* compiler, EV_Binary_t* bin, size_t line) {
 }
 
 int compile_expression(Compiler_t* compiler, Expression_t* expr) {
+    int res;
     switch (expr->type) {
-        case ExpressionType_Literal: {
-            compile_literal(compiler, expr->value.literal);
-            break;
-        }
-        case ExpressionType_Unary: {
-            int res = compile_unary(compiler, expr->value.unary, expr->line);
-            if (res == 1) { return res; }
-            break;
-        }
-        case ExpressionType_Binary: {
-            int res = compile_binary(compiler, expr->value.binary, expr->line);
-            if (res == 1) { return res; }
-            break;
-        }
+        case ExpressionType_Literal:
+            res = compile_literal(compiler, expr->value.literal); break;
+        case ExpressionType_Unary:
+            res = compile_unary(compiler, expr->value.unary, expr->line); break;
+        case ExpressionType_Binary:
+            res = compile_binary(compiler, expr->value.binary, expr->line); break;
     }
-    return 0;
+    return res;
 }
 
 int compile_print(Compiler_t* compiler, ST_Print_t* print) {

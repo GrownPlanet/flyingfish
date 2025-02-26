@@ -15,6 +15,7 @@ int exec_binary(
     Literal_t (*operation)(Literal_t, Literal_t) // higher order function
 );
 int16_t read_flags(Interpreter_t* inter);
+int16_t read_byte(Interpreter_t* inter);
 int16_t extract_addressing_mode(int16_t flags);
 int16_t extract_type(int16_t flags);
 
@@ -140,6 +141,13 @@ int exec_instr(Instruction_t instr, Interpreter_t* inter) {
                 case TYPE_INT: printf("%" PRId "\n", num.i); break;
                 case TYPE_FLOAT: printf("%f\n", num.f); break;
                 case TYPE_BOOL: printf("%s\n", num.b ? "true" : "false"); break;
+                case TYPE_CHAR: printf("%c\n", num.c); break;
+                case TYPE_STRING: {
+                    for (size_t i = 0; i < num.s_t; i++) {
+                        printf("%c", read_byte(inter));
+                    }
+                    printf("\n");
+                }
                 default: {
                     printf("Wrong type for instruction Pri: %d\n", extract_type(flags)); return 1;
                 }
@@ -222,11 +230,17 @@ int set_stack(Stack_t* stack, size_t index, Literal_t element) {
 
 int16_t read_flags(Interpreter_t* inter) {
     int16_t flags = 0;
-    for (size_t i = 0; i < sizeof(int); i++) {
+    for (size_t i = 0; i < sizeof(int16_t); i++) {
         flags = flags | (inter->code[inter->instr_ptr  + i] << (i * 8));
     }
     inter->instr_ptr += sizeof(int16_t);
     return flags;
+}
+
+int16_t read_byte(Interpreter_t* inter) {
+    char byte = inter->code[inter->instr_ptr];
+    inter->instr_ptr += sizeof(char);
+    return byte;
 }
 
 int16_t extract_addressing_mode(int16_t flags) {
