@@ -106,7 +106,29 @@ int exec_instr(Instruction_t instr, Interpreter_t* inter) {
                 case ADDRESSING_MODE_INDIRECT: num = get_elem(inter, op2.i); break;
                 default: printf("(unreachable) unknown addressing mode!\n"); return 1; break;
             }
-            int res = set_stack(&inter->stack, (size_t)op1.i, num);
+            int res = set_stack(&inter->stack, op1.u, num);
+            if (res == 1) { return res; }
+            break;
+        }
+        case Instruction_Movs: {
+            /* const int16_t flags = */ read_flags(inter);
+            Literal_t op1 = read_number(inter);
+            size_t len = read_number(inter).u;
+
+            char* chs = (char*)malloc(sizeof(char) * len);
+
+            for (size_t i = 0; i < len; i++) {
+                chs[i] = read_byte(inter);
+            }
+
+            String_t* s = (String_t*)malloc(sizeof(String_t));
+            s->len = len;
+            s->chars = chs;            
+
+            Literal_t str;
+            str.s = s;
+
+            int res = set_stack(&inter->stack, op1.u, str);
             if (res == 1) { return res; }
             break;
         }
@@ -122,7 +144,7 @@ int exec_instr(Instruction_t instr, Interpreter_t* inter) {
                     printf("Wrong type for instruction Neg: %d\n", extract_type(flags)); res = 1;
                 }
             }
-            res |= set_stack(&inter->stack, (size_t)op1.i, n);
+            res |= set_stack(&inter->stack, op1.u, n);
             if (res == 1) { return res; }
             break;
         }
@@ -143,10 +165,11 @@ int exec_instr(Instruction_t instr, Interpreter_t* inter) {
                 case TYPE_BOOL: printf("%s\n", num.b ? "true" : "false"); break;
                 case TYPE_CHAR: printf("%c\n", num.c); break;
                 case TYPE_STRING: {
-                    for (size_t i = 0; i < num.s_t; i++) {
-                        printf("%c", read_byte(inter));
+                    for (size_t i = 0; i < num.s->len; i++) {
+                        printf("%c", num.s->chars[i]);
                     }
                     printf("\n");
+                    break;
                 }
                 default: {
                     printf("Wrong type for instruction Pri: %d\n", extract_type(flags)); return 1;

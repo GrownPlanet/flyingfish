@@ -16,11 +16,30 @@ int16_t tokentype_to_flag(TokenType_t tokentype);
 
 int compile_literal(Compiler_t* compiler, EV_Literal_t* literal) {
     // INSTR MOV
-    push_chunk(
-        &compiler->bytecode,
-        (void*)(&(Instruction_t){ Instruction_Mov }),
-        sizeof(Instruction_t)
-    );
+    switch (literal->type) {
+        case TokenType_IntV:
+        case TokenType_FloatV:
+        case TokenType_BoolV:
+        case TokenType_CharV:
+            push_chunk(
+                &compiler->bytecode,
+                (void*)(&(Instruction_t){ Instruction_Mov }),
+                sizeof(Instruction_t)
+            );
+            break;
+        case TokenType_StringV:
+            push_chunk(
+                &compiler->bytecode,
+                (void*)(&(Instruction_t){ Instruction_Movs }),
+                sizeof(Instruction_t)
+            );
+            break;
+        default:
+            printf("Illigal type for literal: %d\n", literal->type);
+            return 1;
+            break;
+    }
+            
     // FLAGS
     int16_t flags = tokentype_to_flag(literal->type);
     if (flags == -1) { return 1; }
@@ -44,10 +63,7 @@ int compile_literal(Compiler_t* compiler, EV_Literal_t* literal) {
             push_chunk(&compiler->bytecode, (void*)s->chars, sizeof(char) * s->len);
             break;
         }
-        default:
-            printf("Illigal type for literal: %d\n", literal->type);
-            return 1;
-            break;
+        default: break; // would have already returned an errir in previous switch statement
     }
 
     return 0;

@@ -16,6 +16,7 @@ typedef enum {
     Instruction_And,
     Instruction_Div,
     Instruction_Mov,
+    Instruction_Movs,
     Instruction_Mul,
     Instruction_Neg,
     Instruction_Not,
