@@ -14,6 +14,7 @@
 #include "token.h"
 #include "parser.h"
 #include "interpreter.h"
+#include "hashmap.h"
 
 void print_literal(TokenType_t type, Literal_t* lit);
 void print_statement(Statement_t* stmt);

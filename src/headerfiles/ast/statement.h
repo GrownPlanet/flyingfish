@@ -23,6 +23,7 @@
  */
 
 typedef struct ST_Print_t ST_Print_t;
+typedef struct ST_Var_t ST_Var_t;
 
 typedef enum {
     StatementType_Print,
@@ -39,6 +40,10 @@ typedef struct {
 } Statement_t;
 
 struct ST_Print_t {
+    Expression_t* expr;
+};
+
+struct ST_Var_t {
     Expression_t* expr;
 };
 
