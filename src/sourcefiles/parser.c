@@ -246,9 +246,10 @@ Expression_t* parse_expr(Parser_t* parser) {
 
 Statement_t* parse_print(Parser_t* parser) {
     advance(parser);
+
     Token_t token = parser->tokens[parser->index];
     if (token.type != TokenType_LeftParen) {
-        printf("Expected left paren after 'print' on line %" PRIu "\n", token.line);
+        printf("Expected left paren after `print` on line %" PRIu "\n", token.line);
         return NULL;
     }
     advance(parser);
@@ -280,14 +281,54 @@ Statement_t* parse_print(Parser_t* parser) {
     return stmt;
 }
 
+Statement_t* parse_var(Parser_t* parser) {
+    advance(parser);
+
+    Statement_t* stmt = (Statement_t*)malloc(sizeof(Statement_t));
+    stmt->type = StatementType_Var;
+
+    ST_Var_t* var = (ST_Var_t*)malloc(sizeof(ST_Var_t));
+
+    Token_t token = parser->tokens[parser->index];
+    if (token.type != TokenType_Identifier) {
+        printf("Expected identifier after `var` on line %" PRIu "\n", token.line);
+        return NULL;
+    }
+    var->name = token.literal->s;
+    advance(parser);
+
+    token = parser->tokens[parser->index];
+    if (token.type != TokenType_Equal) {
+        printf("Expected `=` in variable assignment\n");
+        return NULL;
+    }
+    advance(parser);
+
+    var->expr = parse_expr(parser);
+
+    StatementValue_t v;
+    v.var = var;
+    stmt->value = v;
+
+    token = parser->tokens[parser->index];
+    if (token.type != TokenType_Semicolon) {
+        printf("Expected semicolon after print statement on line %" PRIu "\n", token.line);
+        return NULL;
+    }
+    advance(parser);
+
+    return stmt;
+}
+
 Statement_t* parse_statement(Parser_t* parser) {
     Token_t token = parser->tokens[parser->index];
     Statement_t* stmt;
 
     switch (token.type) {
         case TokenType_Print: stmt = parse_print(parser); break;
+        case TokenType_Var: stmt = parse_var(parser); break;
         default: 
-            printf("Statement %d implemented yet!\n", token.type);
+            printf("Statement %d not implemented yet!\n", token.type);
             stmt = NULL;
     }
 

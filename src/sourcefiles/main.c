@@ -234,5 +234,13 @@ void print_statement(Statement_t* stmt) {
             print_expression(pr->expr);
             printf(")");
         }
+        case StatementType_Var: {
+            ST_Var_t* var = stmt->value.var;
+            printf("(Var ");
+            string_print(*var->name);
+            printf(" ");
+            print_expression(var->expr);
+            printf(")");
+        }
     }
 }

@@ -228,18 +228,19 @@ void push_token(Token_t** tokens, size_t* t_len, size_t* t_capacity, Token_t tok
 
 Token_t keyword_to_token(String_t* identifier, size_t line) {
     String_t keys[] = {
-        (String_t) { .chars = "if", .len = 2 },
-        (String_t) { .chars = "else", .len = 4 },
-        (String_t) { .chars = "func", .len = 4 },
-        (String_t) { .chars = "for", .len = 3 },
-        (String_t) { .chars = "return", .len = 6 },
-        (String_t) { .chars = "while", .len = 5 },
-        (String_t) { .chars = "int", .len = 3 },
-        (String_t) { .chars = "float", .len = 5 },
-        (String_t) { .chars = "char", .len = 4 },
-        (String_t) { .chars = "string", .len = 6 },
-        (String_t) { .chars = "bool", .len = 4 },
-        (String_t) { .chars = "print", .len = 5 },
+        string_from_chptr("if"),
+        string_from_chptr("else"),
+        string_from_chptr("func"),
+        string_from_chptr("for"),
+        string_from_chptr("return"),
+        string_from_chptr("while"),
+        string_from_chptr("int"),
+        string_from_chptr("float"),
+        string_from_chptr("char"),
+        string_from_chptr("string"),
+        string_from_chptr("bool"),
+        string_from_chptr("print"),
+        string_from_chptr("var"),
     };
 
     TokenType_t values[] = {
@@ -255,6 +256,7 @@ Token_t keyword_to_token(String_t* identifier, size_t line) {
         TokenType_StringT,
         TokenType_BoolT,
         TokenType_Print,
+        TokenType_Var,
     };
 
     size_t len = sizeof(keys) / sizeof(String_t);

@@ -141,7 +141,9 @@ int exec_instr(Instruction_t instr, Interpreter_t* inter) {
                 case TYPE_INT: { n.i = -get_elem(inter, op1.i).i; break; }
                 case TYPE_FLOAT: { n.f = -get_elem(inter, op1.f).f; break; }
                 default: {
-                    printf("Wrong type for instruction Neg: %d\n", extract_type(flags)); res = 1;
+                    printf("Wrong type for instruction Neg: %d\n", extract_type(flags));
+                    res = 1;
+                    n.i = 0;
                 }
             }
             res |= set_stack(&inter->stack, op1.u, n);

@@ -13,13 +13,16 @@
 
 /*
  * statement:
- *  - print: "print" ( expression )
- *  - var: "var" name = expression
- *  - if: "if" expression block [else [if | block]]?
- *  - while: "while" expression block
- *  - for "for" ( expression; expression; expression ) block
+ *  - print: print\((expression)\)
+ *  - var: var (name) [: type]? = (expression)
+ *  - if: if (expression) (statement) [else (statement)]?
+ *  - while: while (expression) (statement)
+ *  - for: for((expression); (expression); (expression)) (statement)
+ *  - block: {(statement)*}
  *
- *  - block: { statement* }
+ * TODO: 
+ *  - add identifiers to literals!
+ *  - add optional types to var's
  */
 
 typedef struct ST_Print_t ST_Print_t;
@@ -27,10 +30,12 @@ typedef struct ST_Var_t ST_Var_t;
 
 typedef enum {
     StatementType_Print,
+    StatementType_Var,
 } StatementType_t;
 
 typedef union {
     ST_Print_t* print;
+    ST_Var_t* var;
 } StatementValue_t;
 
 typedef struct {
@@ -44,6 +49,7 @@ struct ST_Print_t {
 };
 
 struct ST_Var_t {
+    String_t* name;
     Expression_t* expr;
 };
 
