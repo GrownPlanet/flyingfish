@@ -116,12 +116,20 @@ int exec_instr(Instruction_t instr, Interpreter_t* inter) {
             size_t len = read_number(inter).u;
 
             char* chs = (char*)malloc(sizeof(char) * len);
+            if (chs == NULL) {
+                printf("Malloc failed!\n");
+                return 1;
+            }
 
             for (size_t i = 0; i < len; i++) {
                 chs[i] = read_byte(inter);
             }
 
             String_t* s = (String_t*)malloc(sizeof(String_t));
+            if (s == NULL) {
+                printf("Malloc failed!\n");
+                return 1;
+            }
             s->len = len;
             s->chars = chs;            
 

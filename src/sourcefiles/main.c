@@ -78,23 +78,29 @@ int compile_program(char* filename, char* output_filename) {
 
     // parsing tokens
     printf("ast:\n");
-    Statement_t* stmt = parse(tokens);
+    ParseResult_t parse_result = parse(tokens);
 
-    if (stmt == NULL) {
+    if (parse_result.had_error) {
         free_tokens(tokens);
         return 1;
     }
 
-    print_statement(stmt);
+    for (size_t i = 0; i < parse_result.len; i++) {
+        Statement_t stmt = parse_result.statements[i];
+        print_statement(&stmt);
+        printf("\n");
+    }
 
-    printf("\n\nbytecode:\n");
+    printf("\nbytecode:\n");
 
     // compiling the syntax tree
-    ByteCode_t bytecode = compile(stmt);
+    ByteCode_t bytecode = compile(parse_result);
 
     if (bytecode.had_error) {
         free_tokens(tokens);
-        free_statement(stmt);
+        for (size_t i = 0; i < parse_result.len; i++) {
+            free_statement(&parse_result.statements[i]);
+        }
         free(bytecode.chunks);
         return 1;
     }
@@ -109,7 +115,9 @@ int compile_program(char* filename, char* output_filename) {
     if (res == 1) {
         free(file.chars);
         free_tokens(tokens);
-        free_statement(stmt);
+        for (size_t i = 0; i < parse_result.len; i++) {
+            free_statement(&parse_result.statements[i]);
+        }
         free(bytecode.chunks);
         return 1;
     }
@@ -117,7 +125,9 @@ int compile_program(char* filename, char* output_filename) {
     // freeing data
     free(file.chars);
     free_tokens(tokens);
-    free_statement(stmt);
+    for (size_t i = 0; i < parse_result.len; i++) {
+        free_statement(&parse_result.statements[i]);
+    }
     free(bytecode.chunks);
 
     return 0;
@@ -233,6 +243,7 @@ void print_statement(Statement_t* stmt) {
             printf("(Print ");
             print_expression(pr->expr);
             printf(")");
+            break;
         }
         case StatementType_Var: {
             ST_Var_t* var = stmt->value.var;
@@ -241,6 +252,7 @@ void print_statement(Statement_t* stmt) {
             printf(" ");
             print_expression(var->expr);
             printf(")");
+            break;
         }
     }
 }

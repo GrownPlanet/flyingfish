@@ -18,15 +18,15 @@ String_t* extract_string(String_t input, size_t* index, size_t line);
 
 ScanResult_t scan(String_t input) {
     Token_t* tokens = (Token_t*)malloc(sizeof(Token_t));
+    if (tokens == NULL) {
+        printf("Malloc failed\n");
+        return (ScanResult_t){ .tokens = NULL, .len = 0, .had_error = true };
+    }
     bool had_error = false;
 
     if (tokens == NULL) {
         printf("Malloc failed\n");
-        return (ScanResult_t){
-            .tokens = NULL,
-            .len = 0,
-            .had_error = true,
-        };
+        return (ScanResult_t){ .tokens = NULL, .len = 0, .had_error = true };
     }
 
     size_t t_capacity = 1;
@@ -119,11 +119,7 @@ ScanResult_t scan(String_t input) {
                 Literal_t* lit = (Literal_t*)malloc(sizeof(Literal_t));
                 if (lit == NULL) {
                     printf("Malloc failed\n");
-                    return (ScanResult_t){
-                        .tokens = NULL,
-                        .len = 0,
-                        .had_error = true,
-                    };
+                    return (ScanResult_t) { .tokens = NULL, .len = 0, .had_error = true };
                 }
 
                 lit->s = str;
@@ -135,11 +131,7 @@ ScanResult_t scan(String_t input) {
                 Literal_t* lit = (Literal_t*)malloc(sizeof(Literal_t));
                 if (lit == NULL) {
                     printf("Malloc failed\n");
-                    return (ScanResult_t){
-                        .tokens = NULL,
-                        .len = 0,
-                        .had_error = true,
-                    };
+                    return (ScanResult_t) { .tokens = NULL, .len = 0, .had_error = true };
                 }
 
                 lit->c = input.chars[i];
@@ -169,11 +161,7 @@ ScanResult_t scan(String_t input) {
                     Literal_t* lit = (Literal_t*)malloc(sizeof(Literal_t));
                     if (lit == NULL) {
                         printf("Malloc failed\n");
-                        return (ScanResult_t){
-                            .tokens = NULL,
-                            .len = 0,
-                            .had_error = true,
-                        };
+                        return (ScanResult_t){ .tokens = NULL, .len = 0, .had_error = true };
                     }
 
                     if (is_float) {
@@ -313,6 +301,10 @@ String_t* extract_identifier(String_t input, size_t* index) {
     ident = realloc((void*)ident, i_len);
 
     String_t* retv = (String_t*)malloc(sizeof(String_t));
+    if (retv == NULL) {
+        printf("Malloc failed!\n");
+        return NULL;
+    }
     retv->chars = ident;
     retv->len = i_len;
 
@@ -383,6 +375,10 @@ String_t* extract_string(String_t input, size_t* index, size_t line) {
     str = realloc((void*)str, s_len);
 
     String_t* retv = (String_t*)malloc(sizeof(String_t));
+    if (retv == NULL) {
+        printf("Malloc failed!\n");
+        return NULL;
+    }
     retv->chars = str;
     retv->len = s_len;
 

@@ -12,19 +12,12 @@ typedef struct {
     size_t index;
 } Parser_t;
 
+Expression_t* parse_expr(Parser_t* parser);
 void advance(Parser_t* parser);
-Expression_t* parse_term(Parser_t* parser);
 
 Expression_t* parse_primary(Parser_t* parser) {
     // literal
     Token_t token = parser->tokens[parser->index];
-
-    Expression_t* expr = (Expression_t*)malloc(sizeof(Expression_t));
-    if (expr == NULL) {
-        printf("Malloc failed!\n");
-        return NULL;
-    }
-    expr->line = token.line;
 
     switch (token.type) {
         case TokenType_IntV:
@@ -32,6 +25,13 @@ Expression_t* parse_primary(Parser_t* parser) {
         case TokenType_CharV:
         case TokenType_StringV:
         case TokenType_BoolV:
+        case TokenType_Identifier: {
+            Expression_t* expr = (Expression_t*)malloc(sizeof(Expression_t));
+            if (expr == NULL) {
+                printf("Malloc failed!\n");
+                return NULL;
+            }
+            expr->line = token.line;
             expr->type = ExpressionType_Literal;
 
             EV_Literal_t* lit = (EV_Literal_t*)malloc(sizeof(EV_Literal_t));
@@ -47,10 +47,12 @@ Expression_t* parse_primary(Parser_t* parser) {
             v.literal = lit;
             expr->value = v;
             advance(parser);
-            break;
-        case TokenType_LeftParen:
+
+            return expr;
+        }
+        case TokenType_LeftParen: {
             advance(parser);
-            Expression_t* expr = parse_term(parser);
+            Expression_t* expr = parse_expr(parser);
 
             token = parser->tokens[parser->index];
 
@@ -61,12 +63,13 @@ Expression_t* parse_primary(Parser_t* parser) {
             advance(parser);
 
             return expr;
+        }
         default:
-            printf("Expected primary on line %" PRIu "\n", token.line);
+            printf("Expected expression on line %" PRIu ", got `", token.line);
+            print_token_type(token.type);
+            printf("` instead\n");
             return NULL;
     }
-
-    return expr;
 }
 
 Expression_t* parse_unary(Parser_t* parser) {
@@ -255,10 +258,19 @@ Statement_t* parse_print(Parser_t* parser) {
     advance(parser);
 
     Statement_t* stmt = (Statement_t*)malloc(sizeof(Statement_t));
+    if (stmt == NULL) {
+        printf("Malloc failed!\n");
+        return NULL;
+    }
     stmt->type = StatementType_Print;
 
     ST_Print_t* print = (ST_Print_t*)malloc(sizeof(ST_Print_t));
+    if (stmt == NULL) {
+        printf("Malloc failed!\n");
+        return NULL;
+    }
     print->expr = parse_expr(parser);
+    if (print->expr == NULL) { return NULL; }
 
     StatementValue_t v;
     v.print = print;
@@ -285,9 +297,18 @@ Statement_t* parse_var(Parser_t* parser) {
     advance(parser);
 
     Statement_t* stmt = (Statement_t*)malloc(sizeof(Statement_t));
+    if (stmt == NULL) {
+        printf("Malloc failed!\n");
+        return NULL;
+    }
+
     stmt->type = StatementType_Var;
 
     ST_Var_t* var = (ST_Var_t*)malloc(sizeof(ST_Var_t));
+    if (var == NULL) {
+        printf("Malloc failed!\n");
+        return NULL;
+    }
 
     Token_t token = parser->tokens[parser->index];
     if (token.type != TokenType_Identifier) {
@@ -335,14 +356,43 @@ Statement_t* parse_statement(Parser_t* parser) {
     return stmt;
 }
 
-Statement_t* parse(ScanResult_t tokens) {
+ParseResult_t parse(ScanResult_t tokens) {
     Parser_t parser = {
         .tokens = tokens.tokens,
         .len = tokens.len,
         .index = 0,
     };
 
-    return parse_statement(&parser);
+    Statement_t* statements = (Statement_t*)malloc(sizeof(Statement_t));
+    if (statements == NULL) {
+        printf("Malloc failed!\n");
+        return (ParseResult_t) { .statements = NULL, .len = 0, .had_error = true };
+    }
+
+    size_t capacity = 1;
+    size_t len = 0;
+
+    while (parser.index < parser.len) {
+        Statement_t* statement = parse_statement(&parser);
+        if (statement == NULL) {
+            return (ParseResult_t) { .statements = NULL, .len = 0, .had_error = true };
+        }
+        
+        if (len >= capacity) {
+            capacity *= 2;
+            statements = realloc(statements, sizeof(Statement_t) * capacity);
+            if (statements == NULL) {
+                printf("Realloc failed!\n");
+                return (ParseResult_t) { .statements = NULL, .len = 0, .had_error = true };
+            }
+        }
+
+        statements[len] = *statement;
+        free(statement);
+        len++;
+    }
+
+    return (ParseResult_t) { .statements = statements, .len = len, .had_error = false };
 }
 
 void advance(Parser_t* parser) {

@@ -10,7 +10,14 @@
 
 #include "statement.h"
 #include "scanner.h"
+#include "parser.h"
 
-Statement_t* parse(ScanResult_t tokens);
+typedef struct {
+    Statement_t* statements;
+    size_t len;
+    bool had_error;
+} ParseResult_t;
+
+ParseResult_t parse(ScanResult_t tokens);
 
 #endif // PARSER_H

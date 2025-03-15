@@ -10,7 +10,8 @@
 
 #include "bytecode.h"
 #include "statement.h"
+#include "parser.h"
 
-ByteCode_t compile(Statement_t* stmt);
+ByteCode_t compile(ParseResult_t  parse_result);
 
 #endif // COMPILER_H
