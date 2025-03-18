@@ -149,7 +149,7 @@ int run_program(char* filename) {
     for (size_t i = 0; i < file.len; i++) {
         printf("%02x ", code[i]);
     }
-    printf("\n");
+    printf("\n\n");
     
     // interpret the compiled code
     Interpreter_t interpreter = new_interpreter(code, file.len);

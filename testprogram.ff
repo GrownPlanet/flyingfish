@@ -1,2 +1,2 @@
-var testvar = 42;
+var testvar = 42 + 90 * 3 - 2 >= 310;
 print(testvar);

@@ -41,7 +41,7 @@ int interpret(Interpreter_t interpreter) {
         if (res == 1) { return res; }
     }
 
-    printf("stack:\n");
+    printf("\nstack:\n");
     for (size_t i = 0; i < interpreter.stack.capacity; i++) {
         Literal_t sd = interpreter.stack.data[i];
         printf("  %" PRIx "; %f; %" PRId ",\n", sd.i, sd.f, sd.i);

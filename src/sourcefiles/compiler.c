@@ -48,8 +48,7 @@ int compile_literal_indirect(Compiler_t* compiler, EV_Literal_t* literal) {
     }
             
     // FLAGS
-    int16_t flags = tokentype_to_flag(literal->type);
-    if (flags == -1) { return 1; }
+    int16_t flags = 0;
     if (literal->type == TokenType_Identifier) {
         flags |= ADDRESSING_MODE_INDIRECT;
     } else {
@@ -207,7 +206,9 @@ int compile_binary(Compiler_t* compiler, EV_Binary_t* bin, size_t line) {
 
     // FLAGS
     TokenType_t t = bin->in_type;
-    const int16_t flags = tokentype_to_flag(t) | res.addressing_mode;
+    int16_t flags = tokentype_to_flag(t);
+    if (flags == -1) { return 1; }
+    flags |= res.addressing_mode;
     push_chunk(&compiler->bytecode, (void*)(&flags), sizeof(int16_t));
 
     // ARG1
