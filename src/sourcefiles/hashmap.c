@@ -66,7 +66,7 @@ int hashmap_realloc(HashMap_t* hashmap) {
     return 0;
 }
 
-int hashmap_insert(HashMap_t* hashmap, String_t key, size_t value) {
+int hashmap_insert(HashMap_t* hashmap, String_t key, size_t value, TokenType_t type) {
     // reallocate if hashmap is too full
     float load_factor = ((float)hashmap->len + 1.0) / (float)hashmap->capacity;
     if (load_factor >= HASHMAP_MAX_LOAD_FACTOR) {
@@ -85,6 +85,7 @@ int hashmap_insert(HashMap_t* hashmap, String_t key, size_t value) {
 
     entry->key = key;
     entry->value = value;
+    entry->type = type;
     entry->taken = true;
 
     hashmap->len += 1;
@@ -123,6 +124,7 @@ HM_GetResult_t hashmap_get(HashMap_t* hashmap, String_t key) {
 
     return (HM_GetResult_t) {
         .value = entry->value,
+        .type = entry->type,
         .had_error = false,
     };
 }

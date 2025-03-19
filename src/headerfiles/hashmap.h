@@ -10,6 +10,7 @@
 
 #include "string_utils.h"
 #include "stddef.h"
+#include "token.h"
 
 #define HASHMAP_INITIAL_LENGTH 16
 #define HASHMAP_MAX_LOAD_FACTOR 0.75
@@ -18,6 +19,7 @@
 typedef struct {
     String_t key;
     size_t value;
+    TokenType_t type; // (also part of the value)
     bool taken;
 } Entry_t;
 
@@ -28,11 +30,12 @@ typedef struct {
 } HashMap_t;
 
 HashMap_t new_hashmap();
-int hashmap_insert(HashMap_t* hashmap, String_t key, size_t value);
+int hashmap_insert(HashMap_t* hashmap, String_t key, size_t value, TokenType_t type);
 void hashmap_remove(HashMap_t* hashmap, String_t key);
 
 typedef struct {
     size_t value;
+    TokenType_t type;
     bool had_error;
 } HM_GetResult_t;
 HM_GetResult_t hashmap_get(HashMap_t* hashmap, String_t key);

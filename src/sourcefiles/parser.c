@@ -297,18 +297,12 @@ Statement_t* parse_var(Parser_t* parser) {
     advance(parser);
 
     Statement_t* stmt = (Statement_t*)malloc(sizeof(Statement_t));
-    if (stmt == NULL) {
-        printf("Malloc failed!\n");
-        return NULL;
-    }
+    if (stmt == NULL) { printf("Malloc failed!\n"); return NULL; }
 
     stmt->type = StatementType_Var;
 
     ST_Var_t* var = (ST_Var_t*)malloc(sizeof(ST_Var_t));
-    if (var == NULL) {
-        printf("Malloc failed!\n");
-        return NULL;
-    }
+    if (var == NULL) { printf("Malloc failed!\n"); return NULL; }
 
     Token_t token = parser->tokens[parser->index];
     if (token.type != TokenType_Identifier) {

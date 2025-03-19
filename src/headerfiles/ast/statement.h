@@ -21,7 +21,8 @@
  *  - block: {(statement)*}
  *
  * TODO: 
- *  - add identifiers to literals!
+ *  - add variable reassignement
+ *  - make sure you can perform comparison on bools, strings and chars
  *  - add optional types to var's
  */
 

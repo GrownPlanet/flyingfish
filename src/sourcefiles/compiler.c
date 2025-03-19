@@ -251,7 +251,15 @@ int compile_print(Compiler_t* compiler, ST_Print_t* print) {
     );
 
     // FLAGS
-    int16_t flags = tokentype_to_flag(get_expression_out_type(print->expr));
+    TokenType_t expr_out_t = get_expression_out_type(print->expr);
+    int16_t flags;
+    if (expr_out_t == TokenType_Identifier) {
+        TokenType_t type = 
+            hashmap_get(&compiler->variables, *print->expr->value.literal->value->s).type;
+        flags = tokentype_to_flag(type);
+    } else {
+        flags = tokentype_to_flag(expr_out_t);
+    }
     if (flags == -1) { return 1; }
     flags |= ADDRESSING_MODE_INDIRECT;
     push_chunk(&compiler->bytecode, (void*)(&flags), sizeof(int16_t));
@@ -264,7 +272,12 @@ int compile_print(Compiler_t* compiler, ST_Print_t* print) {
 
 int compile_var(Compiler_t* compiler, ST_Var_t* var) {
     int res = compile_expression(compiler, var->expr);
-    res |= hashmap_insert(&compiler->variables, *var->name, compiler->stack_pointer);
+    res |= hashmap_insert(
+        &compiler->variables,
+        *var->name,
+        compiler->stack_pointer,
+        get_expression_out_type(var->expr)
+    );
 
     compiler->stack_pointer++;
 
@@ -327,7 +340,6 @@ int16_t tokentype_to_flag(TokenType_t tokentype) {
         case TokenType_CharV: { return TYPE_CHAR; }
         case TokenType_StringV: { return TYPE_STRING; }
         case TokenType_BoolV: { return TYPE_BOOL; }
-        case TokenType_Identifier: { return TYPE_INT; } // TODO haha fuck me
         default: {
             printf("Illigal type (");
             print_token_type(tokentype);
