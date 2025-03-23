@@ -335,6 +335,42 @@ Statement_t* parse_var(Parser_t* parser) {
     return stmt;
 }
 
+Statement_t* parse_assignment(Parser_t* parser) {
+    Statement_t* stmt = (Statement_t*)malloc(sizeof(Statement_t));
+    if (stmt == NULL) { printf("Malloc failed!\n"); return NULL; }
+
+    stmt->type = StatementType_Assignment;
+
+    ST_Assignment_t* assig = (ST_Assignment_t*)malloc(sizeof(ST_Assignment_t));
+    if (assig == NULL) { printf("Malloc failed!\n"); return NULL; }
+
+    Token_t token = parser->tokens[parser->index];
+    assig->name = token.literal->s;
+    advance(parser);
+
+    token = parser->tokens[parser->index];
+    if (token.type != TokenType_Equal) {
+        printf("Expected `=` in variable assignment\n");
+        return NULL;
+    }
+    advance(parser);
+
+    assig->expr = parse_expr(parser);
+
+    StatementValue_t v;
+    v.assignment = assig;
+    stmt->value = v;
+
+    token = parser->tokens[parser->index];
+    if (token.type != TokenType_Semicolon) {
+        printf("Expected semicolon after print statement on line %" PRIu "\n", token.line);
+        return NULL;
+    }
+    advance(parser);
+
+    return stmt;
+}
+
 Statement_t* parse_statement(Parser_t* parser) {
     Token_t token = parser->tokens[parser->index];
     Statement_t* stmt;
@@ -342,6 +378,7 @@ Statement_t* parse_statement(Parser_t* parser) {
     switch (token.type) {
         case TokenType_Print: stmt = parse_print(parser); break;
         case TokenType_Var: stmt = parse_var(parser); break;
+        case TokenType_Identifier: stmt = parse_assignment(parser); break;
         default: 
             printf("Statement %d not implemented yet!\n", token.type);
             stmt = NULL;

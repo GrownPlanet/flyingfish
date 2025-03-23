@@ -39,5 +39,6 @@ typedef struct {
     bool had_error;
 } HM_GetResult_t;
 HM_GetResult_t hashmap_get(HashMap_t* hashmap, String_t key);
+Entry_t* hashmap_get_entry(HashMap_t* hashmap, String_t key);
 
 #endif // HASHMAP_H

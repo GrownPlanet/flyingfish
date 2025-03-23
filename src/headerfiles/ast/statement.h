@@ -19,24 +19,22 @@
  *  - while: while (expression) (statement)
  *  - for: for((expression); (expression); (expression)) (statement)
  *  - block: {(statement)*}
- *
- * TODO: 
- *  - add variable reassignement
- *  - make sure you can perform comparison on bools, strings and chars
- *  - add optional types to var's
  */
 
 typedef struct ST_Print_t ST_Print_t;
 typedef struct ST_Var_t ST_Var_t;
+typedef struct ST_Assignment_t ST_Assignment_t;
 
 typedef enum {
     StatementType_Print,
     StatementType_Var,
+    StatementType_Assignment,
 } StatementType_t;
 
 typedef union {
     ST_Print_t* print;
     ST_Var_t* var;
+    ST_Assignment_t* assignment;
 } StatementValue_t;
 
 typedef struct {
@@ -50,6 +48,11 @@ struct ST_Print_t {
 };
 
 struct ST_Var_t {
+    String_t* name;
+    Expression_t* expr;
+};
+
+struct ST_Assignment_t {
     String_t* name;
     Expression_t* expr;
 };

@@ -284,6 +284,27 @@ int compile_var(Compiler_t* compiler, ST_Var_t* var) {
     return res;
 }
 
+int compile_assignment(Compiler_t* compiler, ST_Assignment_t* assig) {
+    int res = compile_expression(compiler, assig->expr);
+
+    Entry_t* entry = hashmap_get_entry(&compiler->variables, *assig->name);
+    if (entry->taken == false) {
+        printf("error: cannot find value `"); string_print(*assig->name); printf("` in this scope\n");
+        return 1;
+    }
+
+    if (entry->type != get_expression_out_type(assig->expr)) {
+        printf("error: mismatched types\n");
+        return 1;
+    }
+
+    entry->value = compiler->stack_pointer;
+
+    compiler->stack_pointer++;
+
+    return res;
+}
+
 int compile_statement(Compiler_t* compiler, Statement_t* stmt) {
     int res = 0;
     switch (stmt->type) {
@@ -292,6 +313,9 @@ int compile_statement(Compiler_t* compiler, Statement_t* stmt) {
             break;
         case StatementType_Var:
             res = compile_var(compiler, stmt->value.var);
+            break;
+        case StatementType_Assignment:
+            res = compile_assignment(compiler, stmt->value.assignment);
             break;
         default: 
             printf("Unknown statement type: %d\n", stmt->type);

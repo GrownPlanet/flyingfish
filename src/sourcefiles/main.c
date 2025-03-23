@@ -1,3 +1,12 @@
+/*
+ * TODO:
+ *  - make sure you can perform comparison on bools, strings and chars
+ *  - add optional types to var's
+ *  - fix recalling a variable (see todo in compiler.c)
+ *  - prefix errors with "error: "
+ *  - add `const` to variables where necessary
+ * */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -253,6 +262,14 @@ void print_statement(Statement_t* stmt) {
             print_expression(var->expr);
             printf(")");
             break;
+        }
+        case StatementType_Assignment: {
+            ST_Assignment_t* assig = stmt->value.assignment;
+            printf("(Assignment ");
+            string_print(*assig->name);
+            printf(" ");
+            print_expression(assig->expr);
+            printf(")");
         }
     }
 }

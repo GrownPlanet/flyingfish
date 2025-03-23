@@ -113,6 +113,7 @@ HM_GetResult_t hashmap_get(HashMap_t* hashmap, String_t key) {
     if (!entry->taken) {
         return (HM_GetResult_t) {
             .value = 0,
+            .type = 0,
             .had_error = true,
         };
     }
@@ -127,4 +128,16 @@ HM_GetResult_t hashmap_get(HashMap_t* hashmap, String_t key) {
         .type = entry->type,
         .had_error = false,
     };
+}
+
+Entry_t* hashmap_get_entry(HashMap_t* hashmap, String_t key) {
+    size_t index = compute_hash(key) % hashmap->capacity;
+    Entry_t* entry = &hashmap->data[index];
+
+    while (!entry->taken && !string_cmp(entry->key, key)) {
+        index = (index + 1) % hashmap->capacity;
+        entry = &hashmap->data[index];
+    }
+
+    return entry;
 }
