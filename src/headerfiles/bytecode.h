@@ -53,5 +53,6 @@ typedef struct {
 } ByteCode_t;
 
 void push_chunk(ByteCode_t* bytecode, void* chunck, size_t chunck_size);
+void print_var_type(int type);
 
 #endif // BYTECODE_H

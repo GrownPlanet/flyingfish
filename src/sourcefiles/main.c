@@ -1,10 +1,10 @@
 /*
  * TODO:
- *  - make sure you can perform comparison on bools, strings and chars
  *  - add optional types to var's
- *  - fix recalling a variable (see todo in compiler.c)
+ *  - improve recalling a variable (see todo in compiler.c)
  *  - prefix errors with "error: "
  *  - add `const` to variables where necessary
+ *  - add earlier errors for illigal opperations on types (ex. true >= false)
  * */
 
 #include <stdio.h>

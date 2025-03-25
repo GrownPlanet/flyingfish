@@ -24,7 +24,8 @@ HashMap_t new_hashmap() {
     Entry_t* data = (Entry_t*)malloc(sizeof(Entry_t) * HASHMAP_INITIAL_LENGTH);
 
     for (size_t i = 0; i < HASHMAP_INITIAL_LENGTH; i++) {
-        data[i].taken = false;
+        data[i].active = false;
+        data[i].was_taken = false;
     }
 
     return (HashMap_t) {
@@ -43,16 +44,17 @@ int hashmap_realloc(HashMap_t* hashmap) {
     }
 
     for (size_t i = 0; i < new_capacity; i++) {
-        new_data[i].taken = false;
+        new_data[i].active = false;
+        new_data[i].was_taken = false;
     }
 
     for (size_t i = 0; i < hashmap->capacity; i++) {
         Entry_t entry = hashmap->data[i];
-        if (!entry.taken) continue;
+        if (!entry.active) continue;
 
         size_t index = compute_hash(entry.key) % hashmap->capacity;
         Entry_t* hm_entry = &hashmap->data[index];
-        while (hm_entry->taken && !string_cmp(hm_entry->key, entry.key)) {
+        while (hm_entry->was_taken && !string_cmp(hm_entry->key, entry.key)) {
             index = (index + 1) % hashmap->capacity;
             hm_entry = &hashmap->data[index];
         }
@@ -78,7 +80,7 @@ int hashmap_insert(HashMap_t* hashmap, String_t key, size_t value, TokenType_t t
     size_t index = compute_hash(key) % hashmap->capacity;
     Entry_t* entry = &hashmap->data[index];
 
-    while (entry->taken && !string_cmp(entry->key, key)) {
+    while (entry->active && !string_cmp(entry->key, key)) {
         index = (index + 1) % hashmap->capacity;
         entry = &hashmap->data[index];
     }
@@ -86,7 +88,8 @@ int hashmap_insert(HashMap_t* hashmap, String_t key, size_t value, TokenType_t t
     entry->key = key;
     entry->value = value;
     entry->type = type;
-    entry->taken = true;
+    entry->active = true;
+    entry->was_taken = true;
 
     hashmap->len += 1;
 
@@ -94,33 +97,18 @@ int hashmap_insert(HashMap_t* hashmap, String_t key, size_t value, TokenType_t t
 }
 
 void hashmap_remove(HashMap_t* hashmap, String_t key) {
-    size_t index = compute_hash(key) % hashmap->capacity;
-    Entry_t* entry = &hashmap->data[index];
-
-    if (!entry->taken) { return; }
-    while (!entry->taken && !string_cmp(entry->key, key)) {
-        index = (index + 1) % hashmap->capacity;
-        entry = &hashmap->data[index];
-    }
-
-    entry->taken = false;
+    Entry_t* entry = hashmap_get_entry(hashmap, key);
+    entry->active = false;
 }
 
 HM_GetResult_t hashmap_get(HashMap_t* hashmap, String_t key) {
-    size_t index = compute_hash(key) % hashmap->capacity;
-    Entry_t* entry = &hashmap->data[index];
-
-    if (!entry->taken) {
+    Entry_t* entry = hashmap_get_entry(hashmap, key);
+    if (!entry->active) {
         return (HM_GetResult_t) {
             .value = 0,
             .type = 0,
             .had_error = true,
         };
-    }
-
-    while (!entry->taken && !string_cmp(entry->key, key)) {
-        index = (index + 1) % hashmap->capacity;
-        entry = &hashmap->data[index];
     }
 
     return (HM_GetResult_t) {
@@ -134,7 +122,7 @@ Entry_t* hashmap_get_entry(HashMap_t* hashmap, String_t key) {
     size_t index = compute_hash(key) % hashmap->capacity;
     Entry_t* entry = &hashmap->data[index];
 
-    while (!entry->taken && !string_cmp(entry->key, key)) {
+    while (entry->was_taken && !string_cmp(entry->key, key)) {
         index = (index + 1) % hashmap->capacity;
         entry = &hashmap->data[index];
     }

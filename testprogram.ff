@@ -1,5 +1,5 @@
-var testvar = 42;
+var testvar = 'f' == 'y';
 print(testvar);
 
-testvar = 57;
+testvar = 'f' == 'f';
 print(testvar);

@@ -106,6 +106,7 @@ CompileLiteralDirect_t compile_literal_direct(Compiler_t* compiler, EV_Literal_t
             };
         case TokenType_StringV:
             compile_literal_indirect(compiler, literal);
+            // compiler->stack_pointer++;
             return (CompileLiteralDirect_t) {
                 .arg = compiler->stack_pointer,
                 .addressing_mode = ADDRESSING_MODE_INDIRECT,
@@ -176,7 +177,14 @@ int compile_binary(Compiler_t* compiler, EV_Binary_t* bin, size_t line) {
         .had_error = false,
     };
     if (bin->right.type == ExpressionType_Literal) {
-        res = compile_literal_direct(compiler, bin->right.value.literal);
+        // just some shitty code, nothing special, it's just that I am aware of that fact here
+        if (bin->right.value.literal->type == TokenType_StringV) {
+            compiler->stack_pointer++;
+            res = compile_literal_direct(compiler, bin->right.value.literal);
+            compiler->stack_pointer--;
+        } else {
+            res = compile_literal_direct(compiler, bin->right.value.literal);
+        }
     } else {
         compiler->stack_pointer++;
         compile_expression(compiler, &bin->right);
@@ -288,13 +296,15 @@ int compile_assignment(Compiler_t* compiler, ST_Assignment_t* assig) {
     int res = compile_expression(compiler, assig->expr);
 
     Entry_t* entry = hashmap_get_entry(&compiler->variables, *assig->name);
-    if (entry->taken == false) {
-        printf("error: cannot find value `"); string_print(*assig->name); printf("` in this scope\n");
+    if (!entry->active) {
+        printf("error: cannot find value `");
+        string_print(*assig->name);
+        printf("` on line %" PRIu " in this scope\n", assig->expr->line);
         return 1;
     }
 
     if (entry->type != get_expression_out_type(assig->expr)) {
-        printf("error: mismatched types\n");
+        printf("error: mismatched types on line %" PRIu "\n", assig->expr->line);
         return 1;
     }
 

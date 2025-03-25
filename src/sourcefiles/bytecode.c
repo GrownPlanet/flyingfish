@@ -21,3 +21,13 @@ void push_chunk(ByteCode_t* bytecode, void* chunk, size_t chunk_size) {
 
     bytecode->len += chunk_size;
 }
+
+void print_var_type(int type) {
+    switch (type) {
+        case TYPE_INT: printf("int"); break;
+        case TYPE_FLOAT: printf("float"); break;
+        case TYPE_CHAR: printf("char"); break;
+        case TYPE_STRING: printf("string"); break;
+        case TYPE_BOOL: printf("bool"); break;
+    }
+}

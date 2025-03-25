@@ -63,30 +63,55 @@ Literal_t mul_f(Literal_t n1, Literal_t n2) { Literal_t s; s.f = n1.f * n2.f; re
 Literal_t div_i(Literal_t n1, Literal_t n2) { Literal_t s; s.i = n1.i / n2.i; return s; }
 Literal_t div_f(Literal_t n1, Literal_t n2) { Literal_t s; s.f = n1.f / n2.f; return s; }
 
-Literal_t eqt_i(Literal_t n1, Literal_t n2) { Literal_t s; s.i = (n1.i == n2.i); return s; }
-Literal_t eqt_f(Literal_t n1, Literal_t n2) { Literal_t s; s.f = (n1.f == n2.f); return s; }
+Literal_t eqt_i(Literal_t n1, Literal_t n2) { Literal_t s; s.b = (n1.i == n2.i); return s; }
+Literal_t eqt_f(Literal_t n1, Literal_t n2) { Literal_t s; s.b = (n1.f == n2.f); return s; }
+Literal_t eqt_b(Literal_t n1, Literal_t n2) { Literal_t s; s.b = (n1.b == n2.b); return s; }
+Literal_t eqt_c(Literal_t n1, Literal_t n2) { Literal_t s; s.b = (n1.c == n2.c); return s; }
+Literal_t eqt_s(Literal_t n1, Literal_t n2) { Literal_t s; s.b = string_cmp(*n1.s, *n2.s); return s; }
 
-Literal_t nqt_i(Literal_t n1, Literal_t n2) { Literal_t s; s.i = (n1.i != n2.i); return s; }
-Literal_t nqt_f(Literal_t n1, Literal_t n2) { Literal_t s; s.f = (n1.f != n2.f); return s; }
+Literal_t nqt_i(Literal_t n1, Literal_t n2) { Literal_t s; s.b = (n1.i != n2.i); return s; }
+Literal_t nqt_f(Literal_t n1, Literal_t n2) { Literal_t s; s.b = (n1.f != n2.f); return s; }
+Literal_t nqt_b(Literal_t n1, Literal_t n2) { Literal_t s; s.b = (n1.b != n2.b); return s; }
+Literal_t nqt_c(Literal_t n1, Literal_t n2) { Literal_t s; s.b = (n1.c != n2.c); return s; }
+Literal_t nqt_s(Literal_t n1, Literal_t n2) { Literal_t s; s.b = !string_cmp(*n1.s, *n2.s); return s; }
 
-Literal_t let_i(Literal_t n1, Literal_t n2) { Literal_t s; s.i = (n1.i < n2.i); return s; }
-Literal_t let_f(Literal_t n1, Literal_t n2) { Literal_t s; s.f = (n1.f < n2.f); return s; }
+Literal_t let_i(Literal_t n1, Literal_t n2) { Literal_t s; s.b = (n1.i < n2.i); return s; }
+Literal_t let_f(Literal_t n1, Literal_t n2) { Literal_t s; s.b = (n1.f < n2.f); return s; }
 
-Literal_t grt_i(Literal_t n1, Literal_t n2) { Literal_t s; s.i = (n1.i > n2.i); return s; }
-Literal_t grt_f(Literal_t n1, Literal_t n2) { Literal_t s; s.f = (n1.f > n2.f); return s; }
+Literal_t grt_i(Literal_t n1, Literal_t n2) { Literal_t s; s.b = (n1.i > n2.i); return s; }
+Literal_t grt_f(Literal_t n1, Literal_t n2) { Literal_t s; s.b = (n1.f > n2.f); return s; }
 
-Literal_t lqt_i(Literal_t n1, Literal_t n2) { Literal_t s; s.i = (n1.i <= n2.i); return s; }
-Literal_t lqt_f(Literal_t n1, Literal_t n2) { Literal_t s; s.f = (n1.f <= n2.f); return s; }
+Literal_t lqt_i(Literal_t n1, Literal_t n2) { Literal_t s; s.b = (n1.i <= n2.i); return s; }
+Literal_t lqt_f(Literal_t n1, Literal_t n2) { Literal_t s; s.b = (n1.f <= n2.f); return s; }
 
-Literal_t gqt_i(Literal_t n1, Literal_t n2) { Literal_t s; s.i = (n1.i >= n2.i); return s; }
-Literal_t gqt_f(Literal_t n1, Literal_t n2) { Literal_t s; s.f = (n1.f >= n2.f); return s; }
+Literal_t gqt_i(Literal_t n1, Literal_t n2) { Literal_t s; s.b = (n1.i >= n2.i); return s; }
+Literal_t gqt_f(Literal_t n1, Literal_t n2) { Literal_t s; s.b = (n1.f >= n2.f); return s; }
 
-#define BIN(f_i, f_f)\
+#define BIN_NUM(f_i, f_f)\
     const int16_t flags = read_flags(inter);\
     int res = 0;\
     switch (extract_type(flags)) {\
         case TYPE_INT: { res |= exec_binary(inter, flags, f_i); break; }\
         case TYPE_FLOAT: { res |= exec_binary(inter, flags, f_f); break; }\
+        default: {\
+            printf("error: wrong type for instruction: ");\
+            print_var_type(extract_type(flags));\
+            printf("\n");\
+            res |= 1;\
+        }\
+    }\
+    if (res == 1) { return res; }\
+    break;
+
+#define BIN_ALL(f_i, f_f, f_b, f_c, f_s)\
+    const int16_t flags = read_flags(inter);\
+    int res = 0;\
+    switch (extract_type(flags)) {\
+        case TYPE_INT: { res |= exec_binary(inter, flags, f_i); break; }\
+        case TYPE_FLOAT: { res |= exec_binary(inter, flags, f_f); break; }\
+        case TYPE_BOOL: { res |= exec_binary(inter, flags, f_b); break; }\
+        case TYPE_CHAR: { res |= exec_binary(inter, flags, f_c); break; }\
+        case TYPE_STRING: { res |= exec_binary(inter, flags, f_s); break; }\
         default: { printf("Wrong type for instruction: %d\n", extract_type(flags)); res |= 1; };\
     }\
     if (res == 1) { return res; }\
@@ -187,16 +212,16 @@ int exec_instr(Instruction_t instr, Interpreter_t* inter) {
             }
             break;
         }
-        case Instruction_Add: { BIN(add_i, add_f) }
-        case Instruction_Div: { BIN(div_i, div_f) }
-        case Instruction_Mul: { BIN(mul_i, mul_f) }
-        case Instruction_Sub: { BIN(sub_i, sub_f) }
-        case Instruction_Eqt: { BIN(eqt_i, eqt_f) } 
-        case Instruction_Nqt: { BIN(nqt_i, nqt_f) } 
-        case Instruction_Let: { BIN(let_i, let_f) } 
-        case Instruction_Grt: { BIN(grt_i, grt_f) } 
-        case Instruction_Lqt: { BIN(lqt_i, lqt_f) } 
-        case Instruction_Gqt: { BIN(gqt_i, gqt_f) } 
+        case Instruction_Add: { BIN_NUM(add_i, add_f) }
+        case Instruction_Div: { BIN_NUM(div_i, div_f) }
+        case Instruction_Mul: { BIN_NUM(mul_i, mul_f) }
+        case Instruction_Sub: { BIN_NUM(sub_i, sub_f) }
+        case Instruction_Eqt: { BIN_ALL(eqt_i, eqt_f, eqt_b, eqt_c, eqt_s) }
+        case Instruction_Nqt: { BIN_ALL(nqt_i, nqt_f, nqt_b, nqt_c, nqt_s) }
+        case Instruction_Let: { BIN_NUM(let_i, let_f) }
+        case Instruction_Grt: { BIN_NUM(grt_i, grt_f) }
+        case Instruction_Lqt: { BIN_NUM(lqt_i, lqt_f) }
+        case Instruction_Gqt: { BIN_NUM(gqt_i, gqt_f) }
         default:
             printf("Unknown instruction: %d not programmed yet!\n", instr);
             return 1;

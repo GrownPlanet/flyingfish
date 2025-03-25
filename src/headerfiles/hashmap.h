@@ -20,7 +20,8 @@ typedef struct {
     String_t key;
     size_t value;
     TokenType_t type; // (also part of the value)
-    bool taken;
+    bool active;
+    bool was_taken;
 } Entry_t;
 
 typedef struct {
