@@ -1,15 +1,13 @@
 # Flying fish
-A simple programming language written in c.
+A simple, badly written and terribly optimized programming language written in c.
 
 ## Building and running
-To build this program you will need a c compiler (gcc is used in the makefile but you can use 
-another if you want to) and make, no external libraries are needed.\
-To build: `./build.sh` on linux or `.\build.bat` on windows, you may need to change the compiler 
-specefied in the bat file on windows\
+To build this program you will need a c compiler (gcc is specefied in build.bat but you can use another compiler if you want to) and cmake, no external libraries are needed.\
+To build: `./build.sh` on linux (and macos, has not been verified yet) and `.\build.bat` on windows or use cmake in your prefered way\
 To run the compiler:\
-`{executable} [compile or c] INPUT`, the executable can be found in `build/` and the test program is 
+`{executable} [compile or c] [input file]`, the executable can be found in `build/` and the test program is
 `testprogram.ff`\
-`{executable} [run or r] BYTECODE`, this will run the compiled bytecode
+`{executable} [run or r] [compiled bytecode]`, this will run the compiled bytecode
 
 ## File structure
 - /src
@@ -20,4 +18,3 @@ To run the compiler:\
 - /build
     - (files from the build process)
 - CmakeLists.txt
-- testprogram.ff
