@@ -39,7 +39,7 @@ int hashmap_realloc(HashMap_t* hashmap) {
     size_t new_capacity = hashmap->capacity * HASHMAP_GROWTH_RATE;
     Entry_t* new_data = (Entry_t*)malloc(sizeof(Entry_t) * new_capacity);
     if (new_data == NULL) { 
-        printf("Malloc failed!\n");
+        printf("malloc failed!\n");
         return 1; 
     }
 

@@ -1,5 +1,12 @@
-var testvar = 'f' == 'y';
-print(testvar);
-
-testvar = 'f' == 'f';
+var testvar = "Global";
+{
+    var testvar = "Local";
+    {
+        var testvar = "Double Local";
+        print(testvar);
+    }
+    print(testvar);
+    testvar = "haha, nevermind";
+    print(testvar);
+}
 print(testvar);

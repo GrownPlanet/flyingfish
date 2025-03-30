@@ -24,7 +24,7 @@ TokenType_t get_expression_in_type(Expression_t* expr) {
         case ExpressionType_Binary: return expr->value.binary->in_type;
         case ExpressionType_Unary: return expr->value.unary->type;
         case ExpressionType_Literal: return expr->value.literal->type;
-        default: printf("Unknown ExpressionType (= %d)\n", expr->type); return -1;
+        default: printf("internal compiler error: unknown ExpressionType (= %d)\n", expr->type); return -1;
     }
 }
 
@@ -33,6 +33,6 @@ TokenType_t get_expression_out_type(Expression_t* expr) {
         case ExpressionType_Binary: return expr->value.binary->out_type;
         case ExpressionType_Unary: return expr->value.unary->type;
         case ExpressionType_Literal: return expr->value.literal->type;
-        default: printf("Unknown ExpressionType (= %d)\n", expr->type); return -1;
+        default: printf("internal compiler error: nknown ExpressionType (= %d)\n", expr->type); return -1;
     }
 }

@@ -12,7 +12,7 @@ void push_chunk(ByteCode_t* bytecode, void* chunk, size_t chunk_size) {
         bytecode->chunks = realloc(bytecode->chunks, bytecode->capacity);
 
         if (bytecode->chunks == NULL) {
-            printf("Realloc failed!\n");
+            printf("realloc failed!\n");
             exit(1);
         }
     }

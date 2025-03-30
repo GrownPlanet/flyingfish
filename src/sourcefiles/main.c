@@ -2,7 +2,6 @@
  * TODO:
  *  - add optional types to var's
  *  - improve recalling a variable (see todo in compiler.c)
- *  - prefix errors with "error: "
  *  - add `const` to variables where necessary
  *  - add earlier errors for illigal opperations on types (ex. true >= false)
  * */
@@ -33,7 +32,7 @@ int run_program(char* filename);
 
 int main(int argc, char* argv[]) {
     if (strcmp(ARCH, "unknown") == 0) {
-        printf("Unknown architecture!\n");
+        printf("error: unknown architecture\n");
         return 1;
     }
 
@@ -60,7 +59,7 @@ int compile_program(char* filename, char* output_filename) {
     // reading the file
     String_t file = read_file_to_string(filename, "r");
     if (file.chars == NULL) {
-        printf("Error reading file!\n");
+        printf("error while reading file\n");
         return 1;
     }
 
@@ -149,7 +148,7 @@ int run_program(char* filename) {
     printf("bytecode:\n");
     String_t file = read_file_to_string(filename, "rb");
     if (file.chars == NULL) {
-        printf("Error reading file!\n");
+        printf("error while reading file\n");
         return 1;
     }
     unsigned char* code = (unsigned char*)file.chars;
@@ -270,6 +269,17 @@ void print_statement(Statement_t* stmt) {
             printf(" ");
             print_expression(assig->expr);
             printf(")");
+            break;
+        }
+        case StatementType_Block: {
+            ST_Block_t* block = stmt->value.block;
+            printf("(Block\n");
+            for (size_t i = 0; i < block->len; i++) {
+                print_statement(&block->stmts[i]);
+                printf("\n");
+            }
+            printf(")");
+            break;
         }
     }
 }

@@ -4,11 +4,19 @@
 #include "expression.h"
 #include "token.h"
 
-void free_statement(Statement_t* expr) {
-    switch (expr->type) {
-        case StatementType_Print: free_expression(expr->value.print->expr); break;
-        case StatementType_Var: free_expression(expr->value.var->expr); break;
-        case StatementType_Assignment: free_expression(expr->value.assignment->expr); break;
-        default: printf("Unknown expression type: %d\n", expr->type); break;
+void free_statement(Statement_t* stmt) {
+    switch (stmt->type) {
+        case StatementType_Print: free_expression(stmt->value.print->expr); break;
+        case StatementType_Var: free_expression(stmt->value.var->expr); break;
+        case StatementType_Assignment: free_expression(stmt->value.assignment->expr); break;
+        case StatementType_Block: {
+            ST_Block_t* block = stmt->value.block;
+            for (size_t i = 0; i < block->len; i++) {
+                free_statement(&block->stmts[i]);
+            }
+            free(block->stmts);
+            break;
+        }
+        default: printf("internal compiler error: unknown statement type: %d\n", stmt->type); break;
     }
 }

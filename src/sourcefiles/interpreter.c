@@ -112,7 +112,7 @@ Literal_t gqt_f(Literal_t n1, Literal_t n2) { Literal_t s; s.b = (n1.f >= n2.f);
         case TYPE_BOOL: { res |= exec_binary(inter, flags, f_b); break; }\
         case TYPE_CHAR: { res |= exec_binary(inter, flags, f_c); break; }\
         case TYPE_STRING: { res |= exec_binary(inter, flags, f_s); break; }\
-        default: { printf("Wrong type for instruction: %d\n", extract_type(flags)); res |= 1; };\
+        default: { printf("error: wrong type for instruction: %d\n", extract_type(flags)); res |= 1; };\
     }\
     if (res == 1) { return res; }\
     break;
@@ -129,7 +129,7 @@ int exec_instr(Instruction_t instr, Interpreter_t* inter) {
             switch (extract_addressing_mode(flags)) {
                 case ADDRESSING_MODE_DIRECT: num = op2; break;
                 case ADDRESSING_MODE_INDIRECT: num = get_elem(inter, op2.i); break;
-                default: printf("(unreachable) unknown addressing mode!\n"); return 1; break;
+                default: printf("error: unknown addressing mode\n"); return 1; break;
             }
             int res = set_stack(&inter->stack, op1.u, num);
             if (res == 1) { return res; }
@@ -142,7 +142,7 @@ int exec_instr(Instruction_t instr, Interpreter_t* inter) {
 
             char* chs = (char*)malloc(sizeof(char) * len);
             if (chs == NULL) {
-                printf("Malloc failed!\n");
+                printf("malloc failed!\n");
                 return 1;
             }
 
@@ -152,7 +152,7 @@ int exec_instr(Instruction_t instr, Interpreter_t* inter) {
 
             String_t* s = (String_t*)malloc(sizeof(String_t));
             if (s == NULL) {
-                printf("Malloc failed!\n");
+                printf("malloc failed!\n");
                 return 1;
             }
             s->len = len;
@@ -174,7 +174,7 @@ int exec_instr(Instruction_t instr, Interpreter_t* inter) {
                 case TYPE_INT: { n.i = -get_elem(inter, op1.i).i; break; }
                 case TYPE_FLOAT: { n.f = -get_elem(inter, op1.f).f; break; }
                 default: {
-                    printf("Wrong type for instruction Neg: %d\n", extract_type(flags));
+                    printf("error: wrong type for instruction Neg: %d\n", extract_type(flags));
                     res = 1;
                     n.i = 0;
                 }
@@ -191,7 +191,7 @@ int exec_instr(Instruction_t instr, Interpreter_t* inter) {
             switch (extract_addressing_mode(flags)) {
                 case ADDRESSING_MODE_DIRECT: num = op1; break;
                 case ADDRESSING_MODE_INDIRECT: num = get_elem(inter, op1.i); break;
-                default: printf("(unreachable) unknown addressing mode!\n"); return 1; break;
+                default: printf("error: unknown addressing mode\n"); return 1; break;
             }
 
             switch (extract_type(flags)) {
@@ -207,7 +207,7 @@ int exec_instr(Instruction_t instr, Interpreter_t* inter) {
                     break;
                 }
                 default: {
-                    printf("Wrong type for instruction Pri: %d\n", extract_type(flags)); return 1;
+                    printf("error: wrong type for instruction Pri: %d\n", extract_type(flags)); return 1;
                 }
             }
             break;
@@ -223,7 +223,7 @@ int exec_instr(Instruction_t instr, Interpreter_t* inter) {
         case Instruction_Lqt: { BIN_NUM(lqt_i, lqt_f) }
         case Instruction_Gqt: { BIN_NUM(gqt_i, gqt_f) }
         default:
-            printf("Unknown instruction: %d not programmed yet!\n", instr);
+            printf("error: unknown instruction: %d not programmed yet\n", instr);
             return 1;
             break;
     }
@@ -243,7 +243,7 @@ int exec_binary(
             num = operation(get_elem(inter, op1.i), op2); break;
         case ADDRESSING_MODE_INDIRECT: 
             num = operation(get_elem(inter, op1.i), get_elem(inter, op2.i)); break;
-        default: printf("(unreachable) unknown addressing mode!\n"); return 1; break;
+        default: printf("error: unknown addressing mode\n"); return 1; break;
     }
     int res = set_stack(&inter->stack, (size_t)op1.i, num);
     return res;
@@ -277,7 +277,7 @@ int set_stack(Stack_t* stack, size_t index, Literal_t element) {
         stack->data = realloc(stack->data, stack->capacity * sizeof(Literal_t));
 
         if (stack->data == NULL) {
-            printf("Realloc failed!\n");
+            printf("realloc failed!\n");
             return 1;
         }
     }

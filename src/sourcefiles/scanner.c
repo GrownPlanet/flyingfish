@@ -19,13 +19,13 @@ String_t* extract_string(String_t input, size_t* index, size_t line);
 ScanResult_t scan(String_t input) {
     Token_t* tokens = (Token_t*)malloc(sizeof(Token_t));
     if (tokens == NULL) {
-        printf("Malloc failed\n");
+        printf("malloc failed\n");
         return (ScanResult_t){ .tokens = NULL, .len = 0, .had_error = true };
     }
     bool had_error = false;
 
     if (tokens == NULL) {
-        printf("Malloc failed\n");
+        printf("malloc failed\n");
         return (ScanResult_t){ .tokens = NULL, .len = 0, .had_error = true };
     }
 
@@ -118,7 +118,7 @@ ScanResult_t scan(String_t input) {
                 String_t* str = extract_string(input, &i, line);
                 Literal_t* lit = (Literal_t*)malloc(sizeof(Literal_t));
                 if (lit == NULL) {
-                    printf("Malloc failed\n");
+                    printf("malloc failed\n");
                     return (ScanResult_t) { .tokens = NULL, .len = 0, .had_error = true };
                 }
 
@@ -130,7 +130,7 @@ ScanResult_t scan(String_t input) {
                 i++;
                 Literal_t* lit = (Literal_t*)malloc(sizeof(Literal_t));
                 if (lit == NULL) {
-                    printf("Malloc failed\n");
+                    printf("malloc failed\n");
                     return (ScanResult_t) { .tokens = NULL, .len = 0, .had_error = true };
                 }
 
@@ -139,7 +139,7 @@ ScanResult_t scan(String_t input) {
 
                 i++;
                 if (input.chars[i] != '\'') {
-                    printf("Expected `'` after char on line %" PRIu "\n", line);
+                    printf("error: expected `'` after char on line %" PRIu "\n", line);
                     had_error = true;
                     i--;
                 }
@@ -160,7 +160,7 @@ ScanResult_t scan(String_t input) {
 
                     Literal_t* lit = (Literal_t*)malloc(sizeof(Literal_t));
                     if (lit == NULL) {
-                        printf("Malloc failed\n");
+                        printf("malloc failed\n");
                         return (ScanResult_t){ .tokens = NULL, .len = 0, .had_error = true };
                     }
 
@@ -189,7 +189,7 @@ ScanResult_t scan(String_t input) {
                     break;
                 }
 
-                printf("Unexpected character (= %c) on line %" PRIu "\n", ch, line);
+                printf("error: unexpected character (= %c) on line %" PRIu "\n", ch, line);
                 had_error = true;
                 break;
         }
@@ -257,7 +257,7 @@ Token_t keyword_to_token(String_t* identifier, size_t line) {
 
     Literal_t* lit = (Literal_t*)malloc(sizeof(Literal_t));
     if (lit == NULL) {
-        printf("Malloc failed\n");
+        printf("malloc failed\n");
         return new_token(TokenType_Identifier, line, NULL);
     }
 
@@ -278,7 +278,7 @@ Token_t keyword_to_token(String_t* identifier, size_t line) {
 String_t* extract_identifier(String_t input, size_t* index) {
     char* ident = (char*)malloc(1 * sizeof(char));
     if (ident == NULL) {
-        printf("Malloc failed\n");
+        printf("malloc failed\n");
         return NULL;
     }
 
@@ -302,7 +302,7 @@ String_t* extract_identifier(String_t input, size_t* index) {
 
     String_t* retv = (String_t*)malloc(sizeof(String_t));
     if (retv == NULL) {
-        printf("Malloc failed!\n");
+        printf("malloc failed!\n");
         return NULL;
     }
     retv->chars = ident;
@@ -314,7 +314,7 @@ String_t* extract_identifier(String_t input, size_t* index) {
 char* extract_num(String_t input, size_t* index, bool* is_float) {
     char* num = (char*)malloc(1 * sizeof(char));
     if (num == NULL) {
-        printf("Malloc failed\n");
+        printf("malloc failed\n");
         return NULL;
     }
 
@@ -356,7 +356,7 @@ String_t* extract_string(String_t input, size_t* index, size_t line) {
 
     char* str = (char*)malloc(1 * sizeof(char));
     if (str == NULL) {
-        printf("Malloc failed\n");
+        printf("malloc failed\n");
         return NULL;
     }
 
@@ -367,7 +367,7 @@ String_t* extract_string(String_t input, size_t* index, size_t line) {
         push((void**)&str, &s_len, &s_capacity, sizeof(char), &input.chars[*index]);
         (*index)++;
         if (*index >= input.len) {
-            printf("Expected `\"` after string on line %" PRIu "\n", line);
+            printf("error: expected `\"` after string on line %" PRIu "\n", line);
             return NULL;
         }
     }
@@ -376,7 +376,7 @@ String_t* extract_string(String_t input, size_t* index, size_t line) {
 
     String_t* retv = (String_t*)malloc(sizeof(String_t));
     if (retv == NULL) {
-        printf("Malloc failed!\n");
+        printf("malloc failed!\n");
         return NULL;
     }
     retv->chars = str;
