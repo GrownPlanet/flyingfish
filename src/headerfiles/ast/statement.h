@@ -14,11 +14,11 @@
 /*
  * statement:
  *  todo:
- *  - block: {(statement)*}
  *  - if: if (expression) (statement) [else (statement)]?
  *  - while: while (expression) (statement)
  *  - for: for((expression); (expression); (expression)) (statement)
  *  done:
+ *  - block: {(statement)*}
  *  - print: print\((expression)\)
  *  - var: var (name) [: type]? = (expression)
  */
@@ -27,12 +27,14 @@ typedef struct ST_Print_t ST_Print_t;
 typedef struct ST_Var_t ST_Var_t;
 typedef struct ST_Assignment_t ST_Assignment_t;
 typedef struct ST_Block_t ST_Block_t;
+typedef struct ST_If_t ST_If_t;
 
 typedef enum {
     StatementType_Print,
     StatementType_Var,
     StatementType_Assignment,
     StatementType_Block,
+    StatementType_If,
 } StatementType_t;
 
 typedef union {
@@ -40,6 +42,7 @@ typedef union {
     ST_Var_t* var;
     ST_Assignment_t* assignment;
     ST_Block_t* block;
+    ST_If_t* ifs;
 } StatementValue_t;
 
 typedef struct {
@@ -65,6 +68,11 @@ struct ST_Assignment_t {
 struct ST_Block_t {
     Statement_t* stmts;
     size_t len;
+};
+
+struct ST_If_t {
+    Expression_t* expr;
+    Statement_t* then;
 };
 
 void free_statement(Statement_t* expr);

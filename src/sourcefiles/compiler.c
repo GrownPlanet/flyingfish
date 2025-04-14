@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 
 #include "numtypes.h"
 #include "bytecode.h"
@@ -198,7 +199,7 @@ CompileLiteralDirect_t compile_literal_direct(Compiler_t* compiler, EV_Literal_t
             }
             return (CompileLiteralDirect_t) {
                 .arg = arg.value,
-                .addressing_mode = ADDRESSING_MODE_DIRECT,
+                .addressing_mode = ADDRESSING_MODE_INDIRECT,
                 .had_error = false,
             };
         }
@@ -251,6 +252,7 @@ int compile_binary(Compiler_t* compiler, EV_Binary_t* bin, size_t line) {
         .addressing_mode = ADDRESSING_MODE_INDIRECT,
         .had_error = false,
     };
+
     if (bin->right.type == ExpressionType_Literal) {
         // just some shitty code, nothing special, it's just that I am aware of that fact here
         if (bin->right.value.literal->type == TokenType_StringV) {
@@ -389,6 +391,59 @@ int compile_block(Compiler_t* compiler, ST_Block_t* block) {
     return 0;
 }
 
+int compile_if(Compiler_t* compiler, ST_If_t* ifs) {
+    int res = compile_expression(compiler, ifs->expr);
+    if (res == 1) { return res; }
+
+    // INSTR IF
+    push_chunk(
+        &compiler->bytecode,
+        (void*)(&(Instruction_t){ Instruction_If }),
+        sizeof(Instruction_t)
+    );
+
+    // FLAGS
+    TokenType_t expr_out_t = get_expression_out_type(ifs->expr);
+    int16_t flags;
+    if (expr_out_t == TokenType_Identifier) {
+        TokenType_t type = 
+            environement_get(&compiler->env, *ifs->expr->value.literal->value->s).type;
+        flags = tokentype_to_flag(type);
+    } else {
+        flags = tokentype_to_flag(expr_out_t);
+    }
+    if (flags == -1) { return 1; }
+    flags |= ADDRESSING_MODE_INDIRECT;
+    push_chunk(&compiler->bytecode, (void*)(&flags), sizeof(int16_t));
+
+    // ARG1
+    push_chunk(&compiler->bytecode, (void*)(&compiler->stack_pointer), sizeof(size_t));
+
+    // ELSE
+    // INSTR JMP
+    push_chunk(
+        &compiler->bytecode,
+        (void*)(&(Instruction_t){ Instruction_Jmp }),
+        sizeof(Instruction_t)
+    );
+
+    // ARG1
+    size_t else_location = compiler->bytecode.len;
+    push_chunk(&compiler->bytecode, (void*)(&compiler->stack_pointer), sizeof(size_t));
+
+    // THEN
+    compile_statement(compiler, ifs->then);
+
+    // ELSE
+    memcpy(
+        compiler->bytecode.chunks + else_location,
+        (void*)(&compiler->bytecode.len),
+        sizeof(size_t)
+    );
+
+    return 0;
+}
+
 int compile_statement(Compiler_t* compiler, Statement_t* stmt) {
     int res = 0;
     switch (stmt->type) {
@@ -404,8 +459,11 @@ int compile_statement(Compiler_t* compiler, Statement_t* stmt) {
         case StatementType_Block:
             res = compile_block(compiler, stmt->value.block);
             break;
+        case StatementType_If:
+            res = compile_if(compiler, stmt->value.ifs);
+            break;
         default: 
-            printf("error: unknown statement type: %d\n", stmt->type);
+            printf("internal compiler error: unknown statement type: %d\n", stmt->type);
             res = 1;
             break;
     }

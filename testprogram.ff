@@ -1,12 +1,5 @@
-var testvar = "Global";
-{
-    var testvar = "Local";
-    {
-        var testvar = "Double Local";
-        print(testvar);
-    }
-    print(testvar);
-    testvar = "haha, nevermind";
-    print(testvar);
+var x = 100;
+if (5 > x) {
+    print("x is greater than 5.");
 }
-print(testvar);
+print("The end!");

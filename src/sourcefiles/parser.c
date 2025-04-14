@@ -153,12 +153,12 @@ Expression_t* parse_binary(
 
         TokenType_t t1 = get_expression_out_type(expr);
         TokenType_t t2 = get_expression_out_type(&bin->right);
-        if (t1 != t2) {
-            printf("error: types do not match in expression:");
+        if (t1 != t2 && t1 != TokenType_Identifier && t2 != TokenType_Identifier) {
+            printf("error: types do not match in expression: ");
             print_token_type(t1);
             printf(" and ");
             print_token_type(t2);
-            printf("on line %" PRIu "\n", token.line);
+            printf(" on line %" PRIu "\n", token.line);
             return NULL;
         }
         bin->in_type = t1;
@@ -259,17 +259,11 @@ Statement_t* parse_print(Parser_t* parser) {
     advance(parser);
 
     Statement_t* stmt = (Statement_t*)malloc(sizeof(Statement_t));
-    if (stmt == NULL) {
-        printf("malloc failed!\n");
-        return NULL;
-    }
+    if (stmt == NULL) { printf("malloc failed!\n"); return NULL; }
     stmt->type = StatementType_Print;
 
     ST_Print_t* print = (ST_Print_t*)malloc(sizeof(ST_Print_t));
-    if (stmt == NULL) {
-        printf("malloc failed!\n");
-        return NULL;
-    }
+    if (stmt == NULL) { printf("malloc failed!\n"); return NULL; }
     print->expr = parse_expr(parser);
     if (print->expr == NULL) { return NULL; }
 
@@ -435,6 +429,30 @@ Statement_t* parse_block(Parser_t* parser) {
     return stmt;
 }
 
+Statement_t* parse_if(Parser_t* parser) {
+    advance(parser);
+
+    Statement_t* stmt = (Statement_t*)malloc(sizeof(Statement_t));
+    if (stmt == NULL) { printf("malloc failed!\n"); return NULL; }
+
+    stmt->type = StatementType_If;
+
+    ST_If_t* ifs = (ST_If_t*)malloc(sizeof(Statement_t));
+    if (ifs == NULL) { printf("malloc failed!\n"); return NULL; }
+
+    ifs->expr = parse_expr(parser);
+    if (ifs->expr == NULL) { return NULL; }
+
+    ifs->then = parse_statement(parser);
+    if (ifs->then == NULL) { return NULL; }
+
+    StatementValue_t v;
+    v.ifs = ifs;
+    stmt->value = v;
+
+    return stmt;
+}
+
 Statement_t* parse_statement(Parser_t* parser) {
     Token_t token = parser->tokens[parser->index];
     Statement_t* stmt;
@@ -444,6 +462,7 @@ Statement_t* parse_statement(Parser_t* parser) {
         case TokenType_Var: stmt = parse_var(parser); break;
         case TokenType_Identifier: stmt = parse_assignment(parser); break;
         case TokenType_LeftBrace: stmt = parse_block(parser); break;
+        case TokenType_If: stmt = parse_if(parser); break;
         default: 
             printf("error: unexpected token in a statement on line %" PRIu ": ", token.line); 
             print_token_type(token.type);

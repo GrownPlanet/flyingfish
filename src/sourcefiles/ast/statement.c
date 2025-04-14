@@ -17,6 +17,10 @@ void free_statement(Statement_t* stmt) {
             free(block->stmts);
             break;
         }
+        case StatementType_If:
+            free_expression(stmt->value.ifs->expr);
+            free_statement(stmt->value.ifs->then);
+            break;
         default: printf("internal compiler error: unknown statement type: %d\n", stmt->type); break;
     }
 }

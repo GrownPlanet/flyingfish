@@ -12,7 +12,7 @@
 #include <stdbool.h>
 
 typedef enum {
-    Instruction_Add,
+    Instruction_Add, // 0
     Instruction_And,
     Instruction_Div,
     Instruction_Mov,
@@ -22,7 +22,7 @@ typedef enum {
     Instruction_Not,
     Instruction_Or,
     Instruction_Sub,
-    Instruction_Xor,
+    Instruction_Xor, // 10
     Instruction_Eqt,
     Instruction_Nqt,
     Instruction_Let,
@@ -30,6 +30,12 @@ typedef enum {
     Instruction_Lqt,
     Instruction_Gqt,
     Instruction_Pri,
+    // JMP [location]
+    Instruction_Jmp,
+    // IF [flags] [cond]
+    // JUMP [else_location]
+    // [if case]
+    Instruction_If, // 19
 } Instruction_t;
 
 
