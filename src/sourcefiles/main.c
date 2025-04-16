@@ -1,9 +1,9 @@
 /*
  * TODO: 
  *  - ! Make `x>5` possible (in parser)
- *      - add earlier errors for illigal opperations on types (ex. true >= false)
  *  - document instruction arguments in bytecode.h
  *  - add optional types to var's
+ *  - add earlier errors for illigal opperations on types (ex. true >= false)
  *  - improve recalling a variable (see todo in compiler.c)
  * */
 
@@ -120,16 +120,7 @@ int compile_program(char* filename, char* output_filename) {
     printf("\n");
 
     // emmitter
-    const int res = emit(&bytecode, output_filename);
-    if (res == 1) {
-        free(file.chars);
-        free_tokens(tokens);
-        for (size_t i = 0; i < parse_result.len; i++) {
-            free_statement(&parse_result.statements[i]);
-        }
-        free(bytecode.chunks);
-        return 1;
-    }
+    int res = emit(&bytecode, output_filename);
 
     // freeing data
     free(file.chars);
@@ -139,7 +130,7 @@ int compile_program(char* filename, char* output_filename) {
     }
     free(bytecode.chunks);
 
-    return 0;
+    return res;
 }
 
 int run_program(char* filename) {

@@ -14,6 +14,10 @@ void free_expression(Expression_t* expr) {
             free(expr->value.unary);
             break;
         case ExpressionType_Literal:
+            // if (expr->value.literal->type == TokenType_Identifier) {
+            //     free(expr->value.literal->value->id);
+            // }
+            // free(expr->value.literal->value);
             free(expr->value.literal);
             break;
     }

@@ -496,10 +496,14 @@ ByteCode_t compile(ParseResult_t parse_result) {
         int res = compile_statement(&compiler, &stmt);
         if (res == 1) { 
             compiler.bytecode.had_error = true; 
+            free(compiler.env.hashmaps[0].data);
+            free(compiler.env.hashmaps);
             return compiler.bytecode;
         }
     }
 
+    free(compiler.env.hashmaps[0].data);
+    free(compiler.env.hashmaps);
     return compiler.bytecode;
 }
 

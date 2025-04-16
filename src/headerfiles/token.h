@@ -36,12 +36,18 @@ typedef enum {
     TokenType_Print,
 } TokenType_t;
 
+typedef struct {
+    String_t name;
+    TokenType_t type;
+} Identifier_t;
+
 typedef union {
     int_t i;
     float_t f;
-    String_t* s;
     char c;
     bool b;
+    String_t* s;
+    Identifier_t* id;
     size_t u; // not a type a variable can be
 } Literal_t;
 

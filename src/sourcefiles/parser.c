@@ -5,11 +5,14 @@
 #include "expression.h"
 #include "statement.h"
 #include "token.h"
+#include "hashmap.h"
 
 typedef struct {
     Token_t* tokens;
     size_t len;
     size_t index;
+    HashMap_t hashmap; // this also contains a value type that wont be used, but it's better than
+                       // writing a new hashmap
 } Parser_t;
 
 Expression_t* parse_expr(Parser_t* parser);
@@ -25,8 +28,7 @@ Expression_t* parse_primary(Parser_t* parser) {
         case TokenType_FloatV:
         case TokenType_CharV:
         case TokenType_StringV:
-        case TokenType_BoolV:
-        case TokenType_Identifier: {
+        case TokenType_BoolV: {
             Expression_t* expr = (Expression_t*)malloc(sizeof(Expression_t));
             if (expr == NULL) {
                 printf("malloc failed!\n");
@@ -51,12 +53,49 @@ Expression_t* parse_primary(Parser_t* parser) {
 
             return expr;
         }
+        case TokenType_Identifier: {
+            Expression_t* expr = (Expression_t*)malloc(sizeof(Expression_t));
+            if (expr == NULL) {
+                printf("malloc failed!\n");
+                return NULL;
+            }
+            expr->line = token.line;
+            expr->type = ExpressionType_Literal;
+
+            EV_Literal_t* lit = (EV_Literal_t*)malloc(sizeof(EV_Literal_t));
+            if (lit == NULL) {
+                printf("malloc failed!\n");
+                return NULL;
+            }
+
+            lit->type = token.type;
+            HM_GetResult_t res = hashmap_get(&parser->hashmap, *token.literal->s);
+            if (res.had_error) {
+                printf("error: unkown variable: ");
+                string_print(*token.literal->s);
+                printf("\n");
+                return NULL;
+            }
+            Identifier_t* id = (Identifier_t*)malloc(sizeof(Identifier_t));
+            id->name = *token.literal->s;
+            id->type = res.type;
+
+            Literal_t* literal = (Literal_t*)malloc(sizeof(Literal_t));
+            literal->id = id;
+            lit->value = literal;
+
+            ExpressionValue_t v;
+            v.literal = lit;
+            expr->value = v;
+            advance(parser);
+
+            return expr;
+        }
         case TokenType_LeftParen: {
             advance(parser);
             Expression_t* expr = parse_expr(parser);
 
             token = parser->tokens[parser->index];
-
             if (token.type != TokenType_RightParen) {
                 printf("error: expected right paren after expression on line %" PRIu "\n", token.line);
                 return NULL;
@@ -152,8 +191,14 @@ Expression_t* parse_binary(
         token = parser->tokens[parser->index];
 
         TokenType_t t1 = get_expression_out_type(expr);
+        if (t1 == TokenType_Identifier) {
+            t1 = expr->value.literal->value->id->type;
+        }
         TokenType_t t2 = get_expression_out_type(&bin->right);
-        if (t1 != t2 && t1 != TokenType_Identifier && t2 != TokenType_Identifier) {
+        if (t2 == TokenType_Identifier) {
+            t2 = bin->right.value.literal->value->id->type;
+        }
+        if (t1 != t2) {
             printf("error: types do not match in expression: ");
             print_token_type(t1);
             printf(" and ");
@@ -327,6 +372,8 @@ Statement_t* parse_var(Parser_t* parser) {
     }
     advance(parser);
 
+    hashmap_insert(&parser->hashmap, *var->name, -1, get_expression_out_type(var->expr));
+
     return stmt;
 }
 
@@ -478,11 +525,13 @@ ParseResult_t parse(ScanResult_t tokens) {
         .tokens = tokens.tokens,
         .len = tokens.len,
         .index = 0,
+        .hashmap = new_hashmap(),
     };
 
     Statement_t* statements = (Statement_t*)malloc(sizeof(Statement_t));
     if (statements == NULL) {
         printf("malloc failed!\n");
+        free(parser.hashmap.data);
         return (ParseResult_t) { .statements = NULL, .len = 0, .had_error = true };
     }
 
@@ -492,6 +541,7 @@ ParseResult_t parse(ScanResult_t tokens) {
     while (parser.index < parser.len) {
         Statement_t* statement = parse_statement(&parser);
         if (statement == NULL) {
+            free(parser.hashmap.data);
             return (ParseResult_t) { .statements = NULL, .len = 0, .had_error = true };
         }
         
@@ -500,6 +550,7 @@ ParseResult_t parse(ScanResult_t tokens) {
             statements = realloc(statements, sizeof(Statement_t) * capacity);
             if (statements == NULL) {
                 printf("realloc failed!\n");
+                free(parser.hashmap.data);
                 return (ParseResult_t) { .statements = NULL, .len = 0, .had_error = true };
             }
         }
@@ -511,9 +562,11 @@ ParseResult_t parse(ScanResult_t tokens) {
     statements = (Statement_t*)realloc(statements, sizeof(Statement_t) * len);
     if (statements == NULL) {
         printf("realloc failed!\n");
+        free(parser.hashmap.data);
         return (ParseResult_t) { .statements = NULL, .len = 0, .had_error = true };
     }
 
+    free(parser.hashmap.data);
     return (ParseResult_t) { .statements = statements, .len = len, .had_error = false };
 }
 
