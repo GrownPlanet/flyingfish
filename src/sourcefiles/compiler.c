@@ -122,7 +122,7 @@ int compile_literal_indirect(Compiler_t* compiler, EV_Literal_t* literal) {
             return 1;
             break;
     }
-            
+
     // FLAGS
     int16_t flags = 0;
     if (literal->type == TokenType_Identifier) {
@@ -131,7 +131,7 @@ int compile_literal_indirect(Compiler_t* compiler, EV_Literal_t* literal) {
         flags |= ADDRESSING_MODE_DIRECT;
     }
     push_chunk(&compiler->bytecode, (void*)(&flags), sizeof(int16_t)); 
-    
+
     // ARG1
     push_chunk(&compiler->bytecode, (void*)(&compiler->stack_pointer), sizeof(Literal_t));
 
@@ -267,7 +267,7 @@ int compile_binary(Compiler_t* compiler, EV_Binary_t* bin, size_t line) {
         compile_expression(compiler, &bin->right);
         compiler->stack_pointer--;
     }
-    
+
     // INSTR
     Instruction_t instr;
     switch (bin->operator.type) {
@@ -433,13 +433,39 @@ int compile_if(Compiler_t* compiler, ST_If_t* ifs) {
 
     // THEN
     compile_statement(compiler, ifs->then);
+    size_t after_location = 0;
+    if (ifs->else_stmt != NULL) {
+        // INSTR JMP
+        push_chunk(
+            &compiler->bytecode,
+            (void*)(&(Instruction_t){ Instruction_Jmp }),
+            sizeof(Instruction_t)
+        );
 
-    // ELSE
+        // ARG1
+        after_location = compiler->bytecode.len;
+        push_chunk(&compiler->bytecode, (void*)(&compiler->stack_pointer), sizeof(size_t));
+    }
+
+    // ELSE/AFTER
     memcpy(
         compiler->bytecode.chunks + else_location,
         (void*)(&compiler->bytecode.len),
         sizeof(size_t)
     );
+
+    if (ifs->else_stmt != NULL) {
+        // ELSE
+        compile_statement(compiler, ifs->else_stmt);
+
+        // AFTER if else
+        memcpy(
+            compiler->bytecode.chunks + after_location,
+            (void*)(&compiler->bytecode.len),
+            sizeof(size_t)
+        );
+    }
+
 
     return 0;
 }
