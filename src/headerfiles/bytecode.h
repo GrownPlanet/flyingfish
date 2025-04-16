@@ -12,33 +12,40 @@
 #include <stdbool.h>
 
 typedef enum {
-    Instruction_Add, // 0
+    // [instr] [flags] [num1] [num2]
+    Instruction_Add,
     Instruction_And,
     Instruction_Div,
-    Instruction_Mov,
-    Instruction_Movs,
     Instruction_Mul,
-    Instruction_Neg,
-    Instruction_Not,
     Instruction_Or,
     Instruction_Sub,
-    Instruction_Xor, // 10
+    Instruction_Xor,
     Instruction_Eqt,
     Instruction_Nqt,
     Instruction_Let,
     Instruction_Grt,
     Instruction_Lqt,
     Instruction_Gqt,
+    // [instr] [flags] [n]
+    Instruction_Not,
+    Instruction_Neg,
+    // MOV [flags] [loc] [num]
+    Instruction_Mov,
+    // MOVS [flags] [loc] [len] [char](*len)
+    Instruction_Movs,
+    // PRI [flags] [num]
     Instruction_Pri,
     // JMP [location]
     Instruction_Jmp,
     // IF [flags] [cond]
-    // JUMP [else_location]
-    // [if case]
-    Instruction_If, // 19
+    // JUMP [else location]
+    // [then case]
+    // JUMP [after if location]?
+    // [else case]?
+    Instruction_If,
 } Instruction_t;
 
-
+// flags
 #define ADDRESSING_MODE_PART     1 // 0b1
 #define ADDRESSING_MODE_DIRECT   0 // 0b0
 #define ADDRESSING_MODE_INDIRECT 1 // 0b1

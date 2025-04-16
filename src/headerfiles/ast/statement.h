@@ -14,10 +14,10 @@
 /*
  * statement:
  *  todo:
- *  - if: if (expression) (statement) [else (statement)]?
  *  - while: while (expression) (statement)
  *  - for: for((expression); (expression); (expression)) (statement)
  *  done:
+ *  - if: if (expression) (statement) [else (statement)]?
  *  - block: {(statement)*}
  *  - print: print\((expression)\)
  *  - var: var (name) [: type]? = (expression)
@@ -73,6 +73,7 @@ struct ST_Block_t {
 struct ST_If_t {
     Expression_t* expr;
     Statement_t* then;
+    Statement_t* else_stmt; // NULL if none
 };
 
 void free_statement(Statement_t* expr);

@@ -497,6 +497,15 @@ Statement_t* parse_if(Parser_t* parser) {
     v.ifs = ifs;
     stmt->value = v;
 
+    Token_t token = parser->tokens[parser->index];
+    if (token.type == TokenType_Else) {
+        advance(parser);
+        ifs->else_stmt = parse_statement(parser);
+        if (ifs->else_stmt == NULL) { return NULL; }
+    } else {
+        ifs->else_stmt = NULL;
+    }
+
     return stmt;
 }
 

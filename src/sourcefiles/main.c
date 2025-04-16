@@ -1,7 +1,5 @@
 /*
  * TODO: 
- *  - ! Make `x>5` possible (in parser)
- *  - document instruction arguments in bytecode.h
  *  - add optional types to var's
  *  - add earlier errors for illigal opperations on types (ex. true >= false)
  *  - improve recalling a variable (see todo in compiler.c)
@@ -265,11 +263,12 @@ void print_statement(Statement_t* stmt) {
         }
         case StatementType_Block: {
             ST_Block_t* block = stmt->value.block;
-            printf("(Block\n");
-            for (size_t i = 0; i < block->len; i++) {
+            printf("(Block ");
+            for (size_t i = 0; i < block->len - 1; i++) {
                 print_statement(&block->stmts[i]);
-                printf("\n");
+                printf(" ");
             }
+            print_statement(&block->stmts[block->len - 1]);
             printf(")");
             break;
         }
@@ -279,6 +278,10 @@ void print_statement(Statement_t* stmt) {
             print_expression(ifs->expr);
             printf(" ");
             print_statement(ifs->then);
+            if (ifs->else_stmt != NULL) {
+                printf(" Else ");
+                print_statement(ifs->else_stmt);
+            }
             printf(")");
         }
     }
