@@ -8,7 +8,7 @@
 #ifndef HASHMAP_H
 #define HASHMAP_H
 
-#include "string_utils.h"
+#include "utils/string.h"
 #include "stddef.h"
 #include "token.h"
 

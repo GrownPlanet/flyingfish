@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "array_utils.h"
+#include "utils/array.h"
 #include "bytecode.h"
 
 void push_chunk(ByteCode_t* bytecode, void* chunk, size_t chunk_size) {

@@ -9,7 +9,7 @@
 #define SCANNER_H
 
 #include "token.h"
-#include "string_utils.h"
+#include "utils/string.h"
 
 typedef struct {
     Token_t* tokens;

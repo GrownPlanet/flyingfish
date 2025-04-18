@@ -4,7 +4,7 @@
 #include <string.h>
 
 #include "numtypes.h"
-#include "array_utils.h"
+#include "utils/array.h"
 #include "scanner.h"
 
 char peek_char(String_t input, size_t index);

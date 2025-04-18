@@ -1,6 +1,6 @@
 #include <stdio.h>
 
-#include "expression.h"
+#include "ast/expression.h"
 
 void free_expression(Expression_t* expr) {
     switch (expr->type) {

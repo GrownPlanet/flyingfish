@@ -124,13 +124,14 @@ int exec_instr(Instruction_t instr, Interpreter_t* inter) {
             const int16_t flags = read_flags(inter);
             Literal_t op1 = read_number(inter);
             Literal_t op2 = read_number(inter);
-
+            
             Literal_t num;
             switch (extract_addressing_mode(flags)) {
                 case ADDRESSING_MODE_DIRECT: num = op2; break;
                 case ADDRESSING_MODE_INDIRECT: num = get_elem(inter, op2.u); break;
                 default: printf("error: unknown addressing mode\n"); return 1; break;
             }
+
             int res = set_stack(&inter->stack, op1.u, num);
             if (res == 1) { return res; }
             break;

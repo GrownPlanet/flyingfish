@@ -1,7 +1,7 @@
 #include <stdio.h>
 
-#include "statement.h"
-#include "expression.h"
+#include "ast/statement.h"
+#include "ast/expression.h"
 #include "token.h"
 
 void free_statement(Statement_t* stmt) {
@@ -18,8 +18,15 @@ void free_statement(Statement_t* stmt) {
             break;
         }
         case StatementType_If:
-            free_expression(stmt->value.ifs->expr);
-            free_statement(stmt->value.ifs->then);
+            free_expression(stmt->value.if_s->condition);
+            free_statement(stmt->value.if_s->if_body);
+            if (stmt->value.if_s->else_body != NULL) {
+                free_statement(stmt->value.if_s->else_body);
+            }
+            break;
+        case StatementType_While:
+            free_expression(stmt->value.while_s->condition);
+            free_statement(stmt->value.while_s->body);
             break;
         default: printf("internal compiler error: unknown statement type: %d\n", stmt->type); break;
     }

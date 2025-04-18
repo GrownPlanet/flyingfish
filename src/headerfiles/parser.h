@@ -8,7 +8,7 @@
 #ifndef PARSER_H
 #define PARSER_H
 
-#include "statement.h"
+#include "ast/statement.h"
 #include "scanner.h"
 #include "parser.h"
 

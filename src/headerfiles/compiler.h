@@ -9,7 +9,7 @@
 #define COMPILER_H
 
 #include "bytecode.h"
-#include "statement.h"
+#include "ast/statement.h"
 #include "parser.h"
 
 ByteCode_t compile(ParseResult_t  parse_result);

@@ -12,7 +12,7 @@
 #include <stdlib.h>
 
 #include "numtypes.h"
-#include "string_utils.h"
+#include "utils/string.h"
 
 typedef enum {
     // parens, braces (0 - 3)

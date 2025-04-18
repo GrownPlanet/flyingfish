@@ -4,10 +4,10 @@
 #include "numtypes.h"
 #include "bytecode.h"
 #include "compiler.h"
-#include "expression.h"
-#include "statement.h"
+#include "ast/expression.h"
+#include "ast/statement.h"
 #include "hashmap.h"
-#include "array_utils.h"
+#include "utils/array.h"
 
 typedef struct {
     HashMap_t* hashmaps;
@@ -56,36 +56,6 @@ HM_GetResult_t environement_get(Environement_t* env, String_t key) {
         if (!res.had_error) { return res; }
     } while (i != 0);
     return res;
-}
-
-int environement_set(
-    Compiler_t* compiler, String_t key, TokenType_t type, size_t line
-) {
-    Environement_t* env = &compiler->env;
-    size_t i = env->len;
-    do {
-        i--;
-        Entry_t* entry = hashmap_get_entry(&env->hashmaps[i], key);
-
-        if (!entry->active) {
-            continue;
-        }
-
-        if (entry->type != type) {
-            printf("error: mismatched types on line %" PRIu "\n", line);
-            return 1;
-        }
-
-        entry->value = compiler->stack_pointer;
-        compiler->stack_pointer++;
-
-        return 0;
-    } while (i != 0);
-
-    printf("error: cannot find variable `");
-    string_print(key);
-    printf("` on line %" PRIu " in this scope\n", line);
-    return 1;
 }
 
 int compile_expression(Compiler_t* compiler, Expression_t* expr);
@@ -312,7 +282,7 @@ int compile_binary(Compiler_t* compiler, EV_Binary_t* bin, size_t line) {
 }
 
 int compile_expression(Compiler_t* compiler, Expression_t* expr) {
-    int res;
+    int res = 0;
     switch (expr->type) {
         case ExpressionType_Literal:
             res = compile_literal_indirect(compiler, expr->value.literal); break;
@@ -361,7 +331,7 @@ int compile_var(Compiler_t* compiler, ST_Var_t* var) {
         &compiler->env,
         *var->name,
         compiler->stack_pointer,
-        get_expression_out_type(var->expr)
+        var->type
     );
 
     compiler->stack_pointer++;
@@ -372,9 +342,24 @@ int compile_var(Compiler_t* compiler, ST_Var_t* var) {
 int compile_assignment(Compiler_t* compiler, ST_Assignment_t* assig) {
     int res = compile_expression(compiler, assig->expr);
 
-    res |= environement_set(
-        compiler, *assig->name, get_expression_out_type(assig->expr), assig->expr->line
+    // INSTR MOV
+    push_chunk(
+        &compiler->bytecode,
+        (void*)(&(Instruction_t){ Instruction_Mov }),
+        sizeof(Instruction_t)
     );
+
+    // FLAGS
+    int16_t flags = ADDRESSING_MODE_INDIRECT;
+    push_chunk(&compiler->bytecode, (void*)(&flags), sizeof(int16_t)); 
+
+    // ARG1
+    HM_GetResult_t hm_res = environement_get(&compiler->env, *assig->name);
+    if (hm_res.had_error) { return 1; }
+    push_chunk(&compiler->bytecode, (void*)(&hm_res.value), sizeof(Literal_t));
+
+    // ARG2
+    push_chunk(&compiler->bytecode, (void*)(&compiler->stack_pointer), sizeof(Literal_t));
 
     return res;
 }
@@ -391,8 +376,19 @@ int compile_block(Compiler_t* compiler, ST_Block_t* block) {
     return 0;
 }
 
-int compile_if(Compiler_t* compiler, ST_If_t* ifs) {
-    int res = compile_expression(compiler, ifs->expr);
+/*
+ * IF
+ *
+ * IF cond
+ * JMP else
+ * (then code)
+ * JMP after    ?
+ * else:
+ * (else code)  ?
+ * after:       ?
+ */
+int compile_if(Compiler_t* compiler, ST_If_t* if_s) {
+    int res = compile_expression(compiler, if_s->condition);
     if (res == 1) { return res; }
 
     // INSTR IF
@@ -403,11 +399,11 @@ int compile_if(Compiler_t* compiler, ST_If_t* ifs) {
     );
 
     // FLAGS
-    TokenType_t expr_out_t = get_expression_out_type(ifs->expr);
+    TokenType_t expr_out_t = get_expression_out_type(if_s->condition);
     int16_t flags;
     if (expr_out_t == TokenType_Identifier) {
         TokenType_t type = 
-            environement_get(&compiler->env, *ifs->expr->value.literal->value->s).type;
+            environement_get(&compiler->env, *if_s->condition->value.literal->value->s).type;
         flags = tokentype_to_flag(type);
     } else {
         flags = tokentype_to_flag(expr_out_t);
@@ -432,9 +428,9 @@ int compile_if(Compiler_t* compiler, ST_If_t* ifs) {
     push_chunk(&compiler->bytecode, (void*)(&compiler->stack_pointer), sizeof(size_t));
 
     // THEN
-    compile_statement(compiler, ifs->then);
+    compile_statement(compiler, if_s->if_body);
     size_t after_location = 0;
-    if (ifs->else_stmt != NULL) {
+    if (if_s->else_body != NULL) {
         // INSTR JMP
         push_chunk(
             &compiler->bytecode,
@@ -454,9 +450,9 @@ int compile_if(Compiler_t* compiler, ST_If_t* ifs) {
         sizeof(size_t)
     );
 
-    if (ifs->else_stmt != NULL) {
+    if (if_s->else_body != NULL) {
         // ELSE
-        compile_statement(compiler, ifs->else_stmt);
+        compile_statement(compiler, if_s->else_body);
 
         // AFTER if else
         memcpy(
@@ -466,6 +462,102 @@ int compile_if(Compiler_t* compiler, ST_If_t* ifs) {
         );
     }
 
+    return 0;
+}
+
+/*
+ * WHILE:
+ *
+ * JMP loop1
+ * cloop1:
+ * // body
+ * loop1:
+ * IF cond
+ * jmp end    // else
+ * jmp cloop1 // if
+ * end:
+ */
+
+int compile_while(Compiler_t* compiler, ST_While_t* while_s) {
+    // JMP loop1
+    push_chunk(
+        &compiler->bytecode,
+        (void*)(&(Instruction_t){ Instruction_Jmp }),
+        sizeof(Instruction_t)
+    );
+
+    // ARG1
+    size_t loop1_location = compiler->bytecode.len;
+    push_chunk(&compiler->bytecode, (void*)(&compiler->stack_pointer), sizeof(size_t));
+
+    // cloop1:
+    size_t label_cloop1 = compiler->bytecode.len;
+
+    // body
+    compile_statement(compiler, while_s->body);
+
+    // loop1:
+    memcpy(
+        compiler->bytecode.chunks + loop1_location,
+        (void*)(&compiler->bytecode.len),
+        sizeof(size_t)
+    );
+
+    // IF
+    int res = compile_expression(compiler, while_s->condition);
+    if (res == 1) { return res; }
+
+    // INSTR IF
+    push_chunk(
+        &compiler->bytecode,
+        (void*)(&(Instruction_t){ Instruction_If }),
+        sizeof(Instruction_t)
+    );
+
+    // FLAGS
+    TokenType_t expr_out_t = get_expression_out_type(while_s->condition);
+    int16_t flags;
+    if (expr_out_t == TokenType_Identifier) {
+        TokenType_t type = 
+            environement_get(&compiler->env, *while_s->condition->value.literal->value->s).type;
+        flags = tokentype_to_flag(type);
+    } else {
+        flags = tokentype_to_flag(expr_out_t);
+    }
+    if (flags == -1) { return 1; }
+    flags |= ADDRESSING_MODE_INDIRECT;
+    push_chunk(&compiler->bytecode, (void*)(&flags), sizeof(int16_t));
+
+    // ARG1
+    push_chunk(&compiler->bytecode, (void*)(&compiler->stack_pointer), sizeof(size_t));
+
+    // JMP
+    push_chunk(
+        &compiler->bytecode,
+        (void*)(&(Instruction_t){ Instruction_Jmp }),
+        sizeof(Instruction_t)
+    );
+
+    // ARG1
+    size_t end_location = compiler->bytecode.len;
+    push_chunk(&compiler->bytecode, (void*)(&compiler->stack_pointer), sizeof(size_t));
+
+    // JMP
+    push_chunk(
+        &compiler->bytecode,
+        (void*)(&(Instruction_t){ Instruction_Jmp }),
+        sizeof(Instruction_t)
+    );
+
+    // ARG1
+    push_chunk(&compiler->bytecode, (void*)(&label_cloop1), sizeof(size_t));
+
+    // END
+    memcpy(
+        compiler->bytecode.chunks + end_location,
+        (void*)(&compiler->bytecode.len),
+        sizeof(size_t)
+    );
 
     return 0;
 }
@@ -486,7 +578,10 @@ int compile_statement(Compiler_t* compiler, Statement_t* stmt) {
             res = compile_block(compiler, stmt->value.block);
             break;
         case StatementType_If:
-            res = compile_if(compiler, stmt->value.ifs);
+            res = compile_if(compiler, stmt->value.if_s);
+            break;
+        case StatementType_While:
+            res = compile_while(compiler, stmt->value.while_s);
             break;
         default: 
             printf("internal compiler error: unknown statement type: %d\n", stmt->type);

@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "array_utils.h"
+#include "utils/array.h"
 
 void push(void** arr, size_t* len, size_t* capacity, size_t elem_size, const void* elem) {
     if (*len >= *capacity) {

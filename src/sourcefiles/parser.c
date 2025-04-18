@@ -2,8 +2,8 @@
 
 #include "numtypes.h"
 #include "parser.h"
-#include "expression.h"
-#include "statement.h"
+#include "ast/expression.h"
+#include "ast/statement.h"
 #include "token.h"
 #include "hashmap.h"
 
@@ -192,11 +192,25 @@ Expression_t* parse_binary(
 
         TokenType_t t1 = get_expression_out_type(expr);
         if (t1 == TokenType_Identifier) {
-            t1 = expr->value.literal->value->id->type;
+            HM_GetResult_t res = hashmap_get(&parser->hashmap, *expr->value.literal->value->s);
+            if (res.had_error) {
+                printf("error: unkown variable: ");
+                string_print(*expr->value.literal->value->s);
+                printf("\n");
+                return NULL;
+            }
+            t1 = res.type;
         }
         TokenType_t t2 = get_expression_out_type(&bin->right);
         if (t2 == TokenType_Identifier) {
-            t2 = bin->right.value.literal->value->id->type;
+            HM_GetResult_t res = hashmap_get(&parser->hashmap, *bin->right.value.literal->value->s);
+            if (res.had_error) {
+                printf("error: unkown variable: ");
+                string_print(*bin->right.value.literal->value->s);
+                printf("\n");
+                return NULL;
+            }
+            t2 = res.type;
         }
         if (t1 != t2) {
             printf("error: types do not match in expression: ");
@@ -360,6 +374,7 @@ Statement_t* parse_var(Parser_t* parser) {
     advance(parser);
 
     var->expr = parse_expr(parser);
+    if (var->expr == NULL) { return NULL; }
 
     StatementValue_t v;
     v.var = var;
@@ -372,7 +387,20 @@ Statement_t* parse_var(Parser_t* parser) {
     }
     advance(parser);
 
-    hashmap_insert(&parser->hashmap, *var->name, -1, get_expression_out_type(var->expr));
+    TokenType_t type = get_expression_out_type(var->expr);
+    if (type == TokenType_Identifier) {
+        HM_GetResult_t res = hashmap_get(&parser->hashmap, *var->expr->value.literal->value->s);
+        if (res.had_error) {
+            printf("error: unkown variable: ");
+            string_print(*var->expr->value.literal->value->s);
+            printf("\n");
+            return NULL;
+        }
+        type = res.type;
+    }
+    hashmap_insert(&parser->hashmap, *var->name, -1, type);
+
+    var->type = type;
 
     return stmt;
 }
@@ -398,6 +426,7 @@ Statement_t* parse_assignment(Parser_t* parser) {
     advance(parser);
 
     assig->expr = parse_expr(parser);
+    if (assig->expr == NULL) { return NULL; }
 
     StatementValue_t v;
     v.assignment = assig;
@@ -484,27 +513,51 @@ Statement_t* parse_if(Parser_t* parser) {
 
     stmt->type = StatementType_If;
 
-    ST_If_t* ifs = (ST_If_t*)malloc(sizeof(Statement_t));
-    if (ifs == NULL) { printf("malloc failed!\n"); return NULL; }
+    ST_If_t* if_s = (ST_If_t*)malloc(sizeof(Statement_t));
+    if (if_s == NULL) { printf("malloc failed!\n"); return NULL; }
 
-    ifs->expr = parse_expr(parser);
-    if (ifs->expr == NULL) { return NULL; }
+    if_s->condition = parse_expr(parser);
+    if (if_s->condition == NULL) { return NULL; }
 
-    ifs->then = parse_statement(parser);
-    if (ifs->then == NULL) { return NULL; }
+    if_s->if_body = parse_statement(parser);
+    if (if_s->if_body == NULL) { return NULL; }
 
     StatementValue_t v;
-    v.ifs = ifs;
+    v.if_s = if_s;
     stmt->value = v;
 
     Token_t token = parser->tokens[parser->index];
     if (token.type == TokenType_Else) {
         advance(parser);
-        ifs->else_stmt = parse_statement(parser);
-        if (ifs->else_stmt == NULL) { return NULL; }
+        if_s->else_body = parse_statement(parser);
+        if (if_s->else_body == NULL) { return NULL; }
     } else {
-        ifs->else_stmt = NULL;
+        if_s->else_body = NULL;
     }
+
+    return stmt;
+}
+
+Statement_t* parse_while(Parser_t* parser) {
+    advance(parser);
+
+    Statement_t* stmt = (Statement_t*)malloc(sizeof(Statement_t));
+    if (stmt == NULL) { printf("malloc failed!\n"); return NULL; }
+
+    stmt->type = StatementType_While;
+
+    ST_While_t* while_s = (ST_While_t*)malloc(sizeof(Statement_t));
+    if (while_s == NULL) { printf("malloc failed!\n"); return NULL; }
+
+    while_s->condition = parse_expr(parser);
+    if (while_s->condition == NULL) { return NULL; }
+
+    while_s->body = parse_statement(parser);
+    if (while_s->body == NULL) { return NULL; }
+
+    StatementValue_t v;
+    v.while_s = while_s;
+    stmt->value = v;
 
     return stmt;
 }
@@ -519,11 +572,12 @@ Statement_t* parse_statement(Parser_t* parser) {
         case TokenType_Identifier: stmt = parse_assignment(parser); break;
         case TokenType_LeftBrace: stmt = parse_block(parser); break;
         case TokenType_If: stmt = parse_if(parser); break;
+        case TokenType_While: stmt = parse_while(parser); break;
         default: 
             printf("error: unexpected token in a statement on line %" PRIu ": ", token.line); 
             print_token_type(token.type);
             printf("\n"); 
-            break;
+            return NULL;
     }
 
     return stmt;

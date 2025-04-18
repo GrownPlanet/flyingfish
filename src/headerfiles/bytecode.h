@@ -38,9 +38,9 @@ typedef enum {
     // JMP [location]
     Instruction_Jmp,
     // IF [flags] [cond]
-    // JUMP [else location]
+    // JMP [else location]
     // [then case]
-    // JUMP [after if location]?
+    // JMP [after if location]?
     // [else case]?
     Instruction_If,
 } Instruction_t;

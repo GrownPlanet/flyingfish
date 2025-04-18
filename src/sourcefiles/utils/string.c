@@ -2,7 +2,7 @@
 #include <string.h>
 #include <stdio.h>
 
-#include "string_utils.h"
+#include "utils/string.h"
 
 bool string_cmp(String_t a, String_t b) {
     if (a.len != b.len) {

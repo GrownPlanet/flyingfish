@@ -2,8 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "file_utils.h"
-#include "string_utils.h"
+#include "utils/file.h"
 
 String_t read_file_to_string(char* filename, char* mode) {
     FILE* file = fopen(filename, mode);

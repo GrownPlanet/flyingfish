@@ -1,5 +1,6 @@
 /*
  * TODO: 
+ *  - generate_flags() function in the compiler
  *  - add optional types to var's
  *  - add earlier errors for illigal opperations on types (ex. true >= false)
  *  - improve recalling a variable (see todo in compiler.c)
@@ -10,13 +11,13 @@
 #include <string.h>
 
 #include "numtypes.h"
-#include "string_utils.h"
+#include "utils/string.h"
 #include "bytecode.h"
 #include "compiler.h"
 #include "emitter.h"
-#include "expression.h"
-#include "statement.h"
-#include "file_utils.h"
+#include "ast/expression.h"
+#include "ast/statement.h"
+#include "utils/file.h"
 #include "scanner.h"
 #include "token.h"
 #include "parser.h"
@@ -248,6 +249,8 @@ void print_statement(Statement_t* stmt) {
             printf("(Var ");
             string_print(*var->name);
             printf(" ");
+            print_token_type(var->type);
+            printf(" ");
             print_expression(var->expr);
             printf(")");
             break;
@@ -273,16 +276,25 @@ void print_statement(Statement_t* stmt) {
             break;
         }
         case StatementType_If: {
-            ST_If_t* ifs = stmt->value.ifs;
+            ST_If_t* if_s = stmt->value.if_s;
             printf("(If ");
-            print_expression(ifs->expr);
+            print_expression(if_s->condition);
             printf(" ");
-            print_statement(ifs->then);
-            if (ifs->else_stmt != NULL) {
+            print_statement(if_s->if_body);
+            if (if_s->else_body != NULL) {
                 printf(" Else ");
-                print_statement(ifs->else_stmt);
+                print_statement(if_s->else_body);
             }
+            break;
+        }
+        case StatementType_While: {
+            ST_While_t* while_s = stmt->value.while_s;
+            printf("(While ");
+            print_expression(while_s->condition);
+            printf(" ");
+            print_statement(while_s->body);
             printf(")");
+            break;
         }
     }
 }
