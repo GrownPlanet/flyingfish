@@ -21,6 +21,21 @@ typedef struct {
     Environement_t env;
 } Compiler_t;
 
+void environement_push(Environement_t* env);
+void environement_pop(Compiler_t* compiler);
+int environement_insert(Environement_t* env, String_t key, size_t value, TokenType_t type);
+HM_GetResult_t environement_get(Environement_t* env, String_t key);
+
+int compile_expression(Compiler_t* compiler, Expression_t* expr);
+int compile_statement(Compiler_t* compiler, Statement_t* stmt);
+int16_t tokentype_to_flag(TokenType_t tokentype);
+int16_t generate_flags(Compiler_t* compiler, Expression_t* expr);
+
+void push_instruction(Compiler_t* compiler, Instruction_t instr);
+void push_flags(Compiler_t* compiler, int16_t flags);
+void push_size_t(Compiler_t* compiler, size_t num);
+void push_literal(Compiler_t* compiler, Literal_t lit);
+
 Environement_t new_environement() {
     HashMap_t* hashmaps = (HashMap_t*)malloc(sizeof(HashMap_t) * 2);
     hashmaps[0] = new_hashmap();
@@ -30,37 +45,6 @@ Environement_t new_environement() {
         .capacity = 2,
     };
 }
-
-void environement_push(Environement_t* env) {
-    HashMap_t hm = new_hashmap();
-    push((void**)(&env->hashmaps), &env->len, &env->capacity, sizeof(HashMap_t), &hm);
-}
-
-void environement_pop(Compiler_t* compiler) {
-    Environement_t* env = &compiler->env;
-    env->len--;
-    compiler->stack_pointer -= env->hashmaps[env->len].len;
-    free(env->hashmaps[env->len].data);
-}
-
-int environement_insert(Environement_t* env, String_t key, size_t value, TokenType_t type) {
-    return hashmap_insert(&env->hashmaps[env->len - 1], key, value, type);
-}
-
-HM_GetResult_t environement_get(Environement_t* env, String_t key) {
-    HM_GetResult_t res = (HM_GetResult_t) { .had_error = true };
-    size_t i = env->len;
-    do {
-        i--;
-        res = hashmap_get(&env->hashmaps[i], key);
-        if (!res.had_error) { return res; }
-    } while (i != 0);
-    return res;
-}
-
-int compile_expression(Compiler_t* compiler, Expression_t* expr);
-int compile_statement(Compiler_t* compiler, Statement_t* stmt);
-int16_t tokentype_to_flag(TokenType_t tokentype);
 
 // compiles a literal with a new position on the stack, can be used when you want to perform an 
 // operation on the literal
@@ -72,18 +56,10 @@ int compile_literal_indirect(Compiler_t* compiler, EV_Literal_t* literal) {
         case TokenType_BoolV:
         case TokenType_CharV:
         case TokenType_Identifier:
-            push_chunk(
-                &compiler->bytecode,
-                (void*)(&(Instruction_t){ Instruction_Mov }),
-                sizeof(Instruction_t)
-            );
+            push_instruction(compiler, Instruction_Mov);
             break;
         case TokenType_StringV:
-            push_chunk(
-                &compiler->bytecode,
-                (void*)(&(Instruction_t){ Instruction_Movs }),
-                sizeof(Instruction_t)
-            );
+            push_instruction(compiler, Instruction_Movs);
             break;
         default:
             printf("error: illigal type for literal: ");
@@ -100,10 +76,10 @@ int compile_literal_indirect(Compiler_t* compiler, EV_Literal_t* literal) {
     } else {
         flags |= ADDRESSING_MODE_DIRECT;
     }
-    push_chunk(&compiler->bytecode, (void*)(&flags), sizeof(int16_t)); 
+    push_flags(compiler, flags);
 
     // ARG1
-    push_chunk(&compiler->bytecode, (void*)(&compiler->stack_pointer), sizeof(Literal_t));
+    push_size_t(compiler, compiler->stack_pointer);
 
     // ARG2
     switch (literal->type) {
@@ -111,19 +87,19 @@ int compile_literal_indirect(Compiler_t* compiler, EV_Literal_t* literal) {
         case TokenType_FloatV:
         case TokenType_BoolV:
         case TokenType_CharV:
-            push_chunk(&compiler->bytecode, (void*)literal->value, sizeof(Literal_t));
+            push_literal(compiler, *literal->value);
             break;
-        case TokenType_StringV: {
-            const String_t* s = literal->value->s;
-            push_chunk(&compiler->bytecode, (void*)(&s->len), sizeof(size_t));
-            push_chunk(&compiler->bytecode, (void*)s->chars, sizeof(char) * s->len);
-            break;
-        }
         case TokenType_Identifier: {
             // TODO: fix this, this is inefficient af
             HM_GetResult_t arg = environement_get(&compiler->env, *literal->value->s);
             if (arg.had_error) { return 1; }
-            push_chunk(&compiler->bytecode, (void*)(&arg.value), sizeof(Literal_t));
+            push_size_t(compiler, arg.value);
+        }
+        case TokenType_StringV: {
+            const String_t* s = literal->value->s;
+            push_size_t(compiler, s->len);
+            push_chunk(&compiler->bytecode, (void*)s->chars, sizeof(char) * s->len);
+            break;
         }
         default: break; // would have already returned an error in previous switch statement
     }
@@ -201,15 +177,15 @@ int compile_unary(Compiler_t* compiler, EV_Unary_t* unary, size_t line) {
             printf(") in a unary on line %" PRIu "\n", line);
             return 1;
     }
-    push_chunk(&compiler->bytecode, (void*)(&instr), sizeof(Instruction_t));
+    push_instruction(compiler, instr);
 
     // FLAGS
     const int16_t flags = tokentype_to_flag(unary->type);
     if (flags == -1) { return 1; }
-    push_chunk(&compiler->bytecode, (void*)(&flags), sizeof(int16_t));
+    push_flags(compiler, flags);
 
     // ARG1
-    push_chunk(&compiler->bytecode, (void*)(&compiler->stack_pointer), sizeof(size_t));
+    push_size_t(compiler, compiler->stack_pointer);
 
     return 0;
 }
@@ -257,24 +233,24 @@ int compile_binary(Compiler_t* compiler, EV_Binary_t* bin, size_t line) {
             printf(") in a binary on line %" PRIu "\n", line);
             return 1;
     }
-    push_chunk(&compiler->bytecode, (void*)(&instr), sizeof(Instruction_t));
+    push_instruction(compiler, instr);
 
     // FLAGS
     TokenType_t t = bin->in_type;
     int16_t flags = tokentype_to_flag(t);
     if (flags == -1) { return 1; }
     flags |= res.addressing_mode;
-    push_chunk(&compiler->bytecode, (void*)(&flags), sizeof(int16_t));
+    push_flags(compiler, flags);
 
     // ARG1
-    push_chunk(&compiler->bytecode, (void*)(&compiler->stack_pointer), sizeof(size_t));
+    push_size_t(compiler, compiler->stack_pointer);
 
     // ARG2
     if (bin->right.type == ExpressionType_Literal) {
-        push_chunk(&compiler->bytecode, (void*)(&res.arg), sizeof(size_t));
+        push_size_t(compiler, res.arg);
     } else {
         compiler->stack_pointer++;
-        push_chunk(&compiler->bytecode, (void*)(&compiler->stack_pointer), sizeof(size_t));
+        push_size_t(compiler, compiler->stack_pointer);
         compiler->stack_pointer--;
     }
 
@@ -299,28 +275,15 @@ int compile_print(Compiler_t* compiler, ST_Print_t* print) {
     if (res == 1) { return res; }
 
     // INSTR PRI
-    push_chunk(
-        &compiler->bytecode,
-        (void*)(&(Instruction_t){ Instruction_Pri }),
-        sizeof(Instruction_t)
-    );
+    push_instruction(compiler, Instruction_Pri);
 
     // FLAGS
-    TokenType_t expr_out_t = get_expression_out_type(print->expr);
-    int16_t flags;
-    if (expr_out_t == TokenType_Identifier) {
-        TokenType_t type = 
-            environement_get(&compiler->env, *print->expr->value.literal->value->s).type;
-        flags = tokentype_to_flag(type);
-    } else {
-        flags = tokentype_to_flag(expr_out_t);
-    }
+    int16_t flags = generate_flags(compiler, print->expr);
     if (flags == -1) { return 1; }
-    flags |= ADDRESSING_MODE_INDIRECT;
-    push_chunk(&compiler->bytecode, (void*)(&flags), sizeof(int16_t));
+    push_flags(compiler, flags);
 
     // ARG1
-    push_chunk(&compiler->bytecode, (void*)(&compiler->stack_pointer), sizeof(size_t));
+    push_size_t(compiler, compiler->stack_pointer);
 
     return 0;
 }
@@ -343,23 +306,19 @@ int compile_assignment(Compiler_t* compiler, ST_Assignment_t* assig) {
     int res = compile_expression(compiler, assig->expr);
 
     // INSTR MOV
-    push_chunk(
-        &compiler->bytecode,
-        (void*)(&(Instruction_t){ Instruction_Mov }),
-        sizeof(Instruction_t)
-    );
+    push_instruction(compiler, Instruction_Mov);
 
     // FLAGS
     int16_t flags = ADDRESSING_MODE_INDIRECT;
-    push_chunk(&compiler->bytecode, (void*)(&flags), sizeof(int16_t)); 
+    push_flags(compiler, flags);
 
     // ARG1
     HM_GetResult_t hm_res = environement_get(&compiler->env, *assig->name);
     if (hm_res.had_error) { return 1; }
-    push_chunk(&compiler->bytecode, (void*)(&hm_res.value), sizeof(Literal_t));
+    push_size_t(compiler, hm_res.value);
 
     // ARG2
-    push_chunk(&compiler->bytecode, (void*)(&compiler->stack_pointer), sizeof(Literal_t));
+    push_size_t(compiler, compiler->stack_pointer);
 
     return res;
 }
@@ -377,8 +336,6 @@ int compile_block(Compiler_t* compiler, ST_Block_t* block) {
 }
 
 /*
- * IF
- *
  * IF cond
  * JMP else
  * (then code)
@@ -392,55 +349,34 @@ int compile_if(Compiler_t* compiler, ST_If_t* if_s) {
     if (res == 1) { return res; }
 
     // INSTR IF
-    push_chunk(
-        &compiler->bytecode,
-        (void*)(&(Instruction_t){ Instruction_If }),
-        sizeof(Instruction_t)
-    );
+    push_instruction(compiler, Instruction_If);
 
     // FLAGS
-    TokenType_t expr_out_t = get_expression_out_type(if_s->condition);
-    int16_t flags;
-    if (expr_out_t == TokenType_Identifier) {
-        TokenType_t type = 
-            environement_get(&compiler->env, *if_s->condition->value.literal->value->s).type;
-        flags = tokentype_to_flag(type);
-    } else {
-        flags = tokentype_to_flag(expr_out_t);
-    }
+    int16_t flags = generate_flags(compiler, if_s->condition);
     if (flags == -1) { return 1; }
-    flags |= ADDRESSING_MODE_INDIRECT;
-    push_chunk(&compiler->bytecode, (void*)(&flags), sizeof(int16_t));
+    push_flags(compiler, flags);
 
     // ARG1
-    push_chunk(&compiler->bytecode, (void*)(&compiler->stack_pointer), sizeof(size_t));
+    push_size_t(compiler, compiler->stack_pointer);
 
     // ELSE
     // INSTR JMP
-    push_chunk(
-        &compiler->bytecode,
-        (void*)(&(Instruction_t){ Instruction_Jmp }),
-        sizeof(Instruction_t)
-    );
+    push_instruction(compiler, Instruction_Jmp);
 
     // ARG1
     size_t else_location = compiler->bytecode.len;
-    push_chunk(&compiler->bytecode, (void*)(&compiler->stack_pointer), sizeof(size_t));
+    push_size_t(compiler, compiler->stack_pointer);
 
     // THEN
     compile_statement(compiler, if_s->if_body);
     size_t after_location = 0;
     if (if_s->else_body != NULL) {
         // INSTR JMP
-        push_chunk(
-            &compiler->bytecode,
-            (void*)(&(Instruction_t){ Instruction_Jmp }),
-            sizeof(Instruction_t)
-        );
+        push_instruction(compiler, Instruction_Jmp);
 
         // ARG1
         after_location = compiler->bytecode.len;
-        push_chunk(&compiler->bytecode, (void*)(&compiler->stack_pointer), sizeof(size_t));
+        push_size_t(compiler, compiler->stack_pointer);
     }
 
     // ELSE/AFTER
@@ -466,7 +402,7 @@ int compile_if(Compiler_t* compiler, ST_If_t* if_s) {
 }
 
 /*
- * WHILE:
+ * While:
  *
  * JMP loop1
  * cloop1:
@@ -480,15 +416,11 @@ int compile_if(Compiler_t* compiler, ST_If_t* if_s) {
 
 int compile_while(Compiler_t* compiler, ST_While_t* while_s) {
     // JMP loop1
-    push_chunk(
-        &compiler->bytecode,
-        (void*)(&(Instruction_t){ Instruction_Jmp }),
-        sizeof(Instruction_t)
-    );
+    push_instruction(compiler, Instruction_Jmp);
 
     // ARG1
     size_t loop1_location = compiler->bytecode.len;
-    push_chunk(&compiler->bytecode, (void*)(&compiler->stack_pointer), sizeof(size_t));
+    push_size_t(compiler, compiler->stack_pointer);
 
     // cloop1:
     size_t label_cloop1 = compiler->bytecode.len;
@@ -508,49 +440,28 @@ int compile_while(Compiler_t* compiler, ST_While_t* while_s) {
     if (res == 1) { return res; }
 
     // INSTR IF
-    push_chunk(
-        &compiler->bytecode,
-        (void*)(&(Instruction_t){ Instruction_If }),
-        sizeof(Instruction_t)
-    );
+    push_instruction(compiler, Instruction_If);
 
     // FLAGS
-    TokenType_t expr_out_t = get_expression_out_type(while_s->condition);
-    int16_t flags;
-    if (expr_out_t == TokenType_Identifier) {
-        TokenType_t type = 
-            environement_get(&compiler->env, *while_s->condition->value.literal->value->s).type;
-        flags = tokentype_to_flag(type);
-    } else {
-        flags = tokentype_to_flag(expr_out_t);
-    }
+    int16_t flags = generate_flags(compiler, while_s->condition);
     if (flags == -1) { return 1; }
-    flags |= ADDRESSING_MODE_INDIRECT;
-    push_chunk(&compiler->bytecode, (void*)(&flags), sizeof(int16_t));
+    push_flags(compiler, flags);
 
     // ARG1
-    push_chunk(&compiler->bytecode, (void*)(&compiler->stack_pointer), sizeof(size_t));
+    push_size_t(compiler, compiler->stack_pointer);
 
     // JMP
-    push_chunk(
-        &compiler->bytecode,
-        (void*)(&(Instruction_t){ Instruction_Jmp }),
-        sizeof(Instruction_t)
-    );
+    push_instruction(compiler, Instruction_Jmp);
 
     // ARG1
     size_t end_location = compiler->bytecode.len;
-    push_chunk(&compiler->bytecode, (void*)(&compiler->stack_pointer), sizeof(size_t));
+    push_size_t(compiler, compiler->stack_pointer);
 
     // JMP
-    push_chunk(
-        &compiler->bytecode,
-        (void*)(&(Instruction_t){ Instruction_Jmp }),
-        sizeof(Instruction_t)
-    );
+    push_instruction(compiler, Instruction_Jmp);
 
     // ARG1
-    push_chunk(&compiler->bytecode, (void*)(&label_cloop1), sizeof(size_t));
+    push_size_t(compiler, label_cloop1);
 
     // END
     memcpy(
@@ -565,24 +476,13 @@ int compile_while(Compiler_t* compiler, ST_While_t* while_s) {
 int compile_statement(Compiler_t* compiler, Statement_t* stmt) {
     int res = 0;
     switch (stmt->type) {
-        case StatementType_Print:
-            res = compile_print(compiler, stmt->value.print);
-            break;
-        case StatementType_Var:
-            res = compile_var(compiler, stmt->value.var);
-            break;
+        case StatementType_Print: res = compile_print(compiler, stmt->value.print); break;
+        case StatementType_Var: res = compile_var(compiler, stmt->value.var); break;
         case StatementType_Assignment:
-            res = compile_assignment(compiler, stmt->value.assignment);
-            break;
-        case StatementType_Block:
-            res = compile_block(compiler, stmt->value.block);
-            break;
-        case StatementType_If:
-            res = compile_if(compiler, stmt->value.if_s);
-            break;
-        case StatementType_While:
-            res = compile_while(compiler, stmt->value.while_s);
-            break;
+            res = compile_assignment(compiler, stmt->value.assignment); break;
+        case StatementType_Block: res = compile_block(compiler, stmt->value.block); break;
+        case StatementType_If: res = compile_if(compiler, stmt->value.if_s); break;
+        case StatementType_While: res = compile_while(compiler, stmt->value.while_s); break;
         default: 
             printf("internal compiler error: unknown statement type: %d\n", stmt->type);
             res = 1;
@@ -642,4 +542,62 @@ int16_t tokentype_to_flag(TokenType_t tokentype) {
             return -1;
         }
     }
+}
+
+void environement_push(Environement_t* env) {
+    HashMap_t hm = new_hashmap();
+    push((void**)(&env->hashmaps), &env->len, &env->capacity, sizeof(HashMap_t), &hm);
+}
+
+void environement_pop(Compiler_t* compiler) {
+    Environement_t* env = &compiler->env;
+    env->len--;
+    compiler->stack_pointer -= env->hashmaps[env->len].len;
+    free(env->hashmaps[env->len].data);
+}
+
+int environement_insert(Environement_t* env, String_t key, size_t value, TokenType_t type) {
+    return hashmap_insert(&env->hashmaps[env->len - 1], key, value, type);
+}
+
+HM_GetResult_t environement_get(Environement_t* env, String_t key) {
+    HM_GetResult_t res = (HM_GetResult_t) { .had_error = true };
+    size_t i = env->len;
+    do {
+        i--;
+        res = hashmap_get(&env->hashmaps[i], key);
+        if (!res.had_error) { return res; }
+    } while (i != 0);
+    return res;
+}
+
+int16_t generate_flags(Compiler_t* compiler, Expression_t* expr) {
+    TokenType_t expr_out_t = get_expression_out_type(expr);
+    int16_t flags;
+    if (expr_out_t == TokenType_Identifier) {
+        TokenType_t type = 
+            environement_get(&compiler->env, *expr->value.literal->value->s).type;
+        flags = tokentype_to_flag(type);
+    } else {
+        flags = tokentype_to_flag(expr_out_t);
+    }
+    if (flags == -1) { return 1; }
+    flags |= ADDRESSING_MODE_INDIRECT;
+    return flags;
+}
+
+void push_instruction(Compiler_t* compiler, Instruction_t instr) {
+    push_chunk(&compiler->bytecode, (void*)(&instr), sizeof(Instruction_t));
+}
+
+void push_flags(Compiler_t* compiler, int16_t flags) {
+    push_chunk(&compiler->bytecode, (void*)(&flags), sizeof(int16_t)); 
+}
+
+void push_size_t(Compiler_t* compiler, size_t num) {
+    push_chunk(&compiler->bytecode, (void*)(&num), sizeof(Literal_t)); 
+}
+
+void push_literal(Compiler_t* compiler, Literal_t lit) {
+    push_chunk(&compiler->bytecode, (void*)(&lit), sizeof(Literal_t)); 
 }

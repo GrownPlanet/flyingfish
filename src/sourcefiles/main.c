@@ -1,6 +1,5 @@
 /*
  * TODO: 
- *  - refactor compiler.c
  *  - add optional types to var's
  *  - add earlier errors for illigal opperations on types (ex. true >= false)
  *  - improve recalling a variable (see todo in compiler.c)
