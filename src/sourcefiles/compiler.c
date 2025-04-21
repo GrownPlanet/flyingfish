@@ -94,6 +94,7 @@ int compile_literal_indirect(Compiler_t* compiler, EV_Literal_t* literal) {
             HM_GetResult_t arg = environement_get(&compiler->env, *literal->value->s);
             if (arg.had_error) { return 1; }
             push_size_t(compiler, arg.value);
+            break;
         }
         case TokenType_StringV: {
             const String_t* s = literal->value->s;
@@ -473,6 +474,73 @@ int compile_while(Compiler_t* compiler, ST_While_t* while_s) {
     return 0;
 }
 
+// TODO: merge for and while loop?
+int compile_for(Compiler_t* compiler, ST_For_t* for_s) {
+    // INIT
+    compile_statement(compiler, for_s->init);
+
+    // LOOP
+
+    // JMP loop1
+    push_instruction(compiler, Instruction_Jmp);
+
+    // ARG1
+    size_t loop1_location = compiler->bytecode.len;
+    push_size_t(compiler, compiler->stack_pointer);
+
+    // cloop1:
+    size_t label_cloop1 = compiler->bytecode.len;
+
+    // body
+    compile_statement(compiler, for_s->body);
+    // incr
+    compile_statement(compiler, for_s->incr);
+
+    // loop1:
+    memcpy(
+        compiler->bytecode.chunks + loop1_location,
+        (void*)(&compiler->bytecode.len),
+        sizeof(size_t)
+    );
+
+    // IF
+    int res = compile_expression(compiler, for_s->condition);
+    if (res == 1) { return res; }
+
+    // INSTR IF
+    push_instruction(compiler, Instruction_If);
+
+    // FLAGS
+    int16_t flags = generate_flags(compiler, for_s->condition);
+    if (flags == -1) { return 1; }
+    push_flags(compiler, flags);
+
+    // ARG1
+    push_size_t(compiler, compiler->stack_pointer);
+
+    // JMP
+    push_instruction(compiler, Instruction_Jmp);
+
+    // ARG1
+    size_t end_location = compiler->bytecode.len;
+    push_size_t(compiler, compiler->stack_pointer);
+
+    // JMP
+    push_instruction(compiler, Instruction_Jmp);
+
+    // ARG1
+    push_size_t(compiler, label_cloop1);
+
+    // END
+    memcpy(
+        compiler->bytecode.chunks + end_location,
+        (void*)(&compiler->bytecode.len),
+        sizeof(size_t)
+    );
+
+    return 0;
+}
+
 int compile_statement(Compiler_t* compiler, Statement_t* stmt) {
     int res = 0;
     switch (stmt->type) {
@@ -483,6 +551,7 @@ int compile_statement(Compiler_t* compiler, Statement_t* stmt) {
         case StatementType_Block: res = compile_block(compiler, stmt->value.block); break;
         case StatementType_If: res = compile_if(compiler, stmt->value.if_s); break;
         case StatementType_While: res = compile_while(compiler, stmt->value.while_s); break;
+        case StatementType_For: res = compile_for(compiler, stmt->value.for_s); break;
         default: 
             printf("internal compiler error: unknown statement type: %d\n", stmt->type);
             res = 1;

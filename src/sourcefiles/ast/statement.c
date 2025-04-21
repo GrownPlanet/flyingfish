@@ -28,6 +28,12 @@ void free_statement(Statement_t* stmt) {
             free_expression(stmt->value.while_s->condition);
             free_statement(stmt->value.while_s->body);
             break;
+        case StatementType_For:
+            free_statement(stmt->value.for_s->init);
+            free_expression(stmt->value.for_s->condition);
+            free_statement(stmt->value.for_s->incr);
+            free_statement(stmt->value.for_s->body);
+            break;
         default: printf("internal compiler error: unknown statement type: %d\n", stmt->type); break;
     }
 }

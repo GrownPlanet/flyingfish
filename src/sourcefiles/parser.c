@@ -382,7 +382,7 @@ Statement_t* parse_var(Parser_t* parser) {
 
     token = parser->tokens[parser->index];
     if (token.type != TokenType_Semicolon) {
-        printf("error: expected semicolon after print statement on line %" PRIu "\n", token.line);
+        printf("error: expected semicolon after variable assignment on line %" PRIu "\n", token.line);
         return NULL;
     }
     advance(parser);
@@ -434,7 +434,7 @@ Statement_t* parse_assignment(Parser_t* parser) {
 
     token = parser->tokens[parser->index];
     if (token.type != TokenType_Semicolon) {
-        printf("error: expected semicolon after print statement on line %" PRIu "\n", token.line);
+        printf("error: expected semicolon after assignment on line %" PRIu "\n", token.line);
         return NULL;
     }
     advance(parser);
@@ -562,6 +562,45 @@ Statement_t* parse_while(Parser_t* parser) {
     return stmt;
 }
 
+Statement_t* parse_for(Parser_t* parser) {
+    advance(parser);
+
+    Statement_t* stmt = (Statement_t*)malloc(sizeof(Statement_t));
+    if (stmt == NULL) { printf("malloc failed!\n"); return NULL; }
+
+    stmt->type = StatementType_For;
+
+    ST_For_t* for_s = (ST_For_t*)malloc(sizeof(ST_For_t));
+    if (for_s == NULL) { printf("malloc failed!\n"); return NULL; }
+
+    for_s->init = parse_statement(parser);
+    if (for_s->init == NULL) { return NULL; }
+    // statement already looks for semicolon
+
+    for_s->condition = parse_expr(parser);
+    if (for_s->condition == NULL) { return NULL; }
+
+    Token_t token = parser->tokens[parser->index];
+    if (token.type != TokenType_Semicolon) {
+        print_token_type(token.type); printf("\n");
+        printf("error: expected semicolon after expression in for loop on line %" PRIu "\n", token.line);
+        return NULL;
+    }
+    advance(parser);
+
+    for_s->incr = parse_statement(parser);
+    if (for_s->incr == NULL) { return NULL; }
+
+    for_s->body = parse_statement(parser);
+    if (for_s->body == NULL) { return NULL; }
+
+    StatementValue_t v;
+    v.for_s = for_s;
+    stmt->value = v;
+
+    return stmt;
+}
+
 Statement_t* parse_statement(Parser_t* parser) {
     Token_t token = parser->tokens[parser->index];
     Statement_t* stmt;
@@ -573,6 +612,7 @@ Statement_t* parse_statement(Parser_t* parser) {
         case TokenType_LeftBrace: stmt = parse_block(parser); break;
         case TokenType_If: stmt = parse_if(parser); break;
         case TokenType_While: stmt = parse_while(parser); break;
+        case TokenType_For: stmt = parse_for(parser); break;
         default: 
             printf("error: unexpected token in a statement on line %" PRIu ": ", token.line); 
             print_token_type(token.type);

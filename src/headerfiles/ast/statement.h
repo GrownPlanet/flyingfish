@@ -13,10 +13,8 @@
 
 /*
  * statement:
- *  todo:
+ *  - for: for (statement); (expression); (statement) (statement)
  *  - while: while (expression) (statement)
- *  - for: for((expression); (expression); (expression)) (statement)
- *  done:
  *  - if: if (expression) (statement) [else (statement)]?
  *  - block: {(statement)*}
  *  - print: print\((expression)\)
@@ -29,6 +27,7 @@ typedef struct ST_Assignment_t ST_Assignment_t;
 typedef struct ST_Block_t ST_Block_t;
 typedef struct ST_If_t ST_If_t;
 typedef struct ST_While_t ST_While_t;
+typedef struct ST_For_t ST_For_t;
 
 typedef enum {
     StatementType_Print,
@@ -37,6 +36,7 @@ typedef enum {
     StatementType_Block,
     StatementType_If,
     StatementType_While,
+    StatementType_For,
 } StatementType_t;
 
 typedef union {
@@ -46,6 +46,7 @@ typedef union {
     ST_Block_t* block;
     ST_If_t* if_s;
     ST_While_t* while_s;
+    ST_For_t* for_s;
 } StatementValue_t;
 
 typedef struct {
@@ -82,6 +83,13 @@ struct ST_If_t {
 
 struct ST_While_t {
     Expression_t* condition;
+    Statement_t* body;
+};
+
+struct ST_For_t {
+    Statement_t* init;
+    Expression_t* condition;
+    Statement_t* incr;
     Statement_t* body;
 };
 

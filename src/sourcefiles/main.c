@@ -1,9 +1,9 @@
 /*
  * TODO: 
- *  - add optional types to var's
  *  - add earlier errors for illigal opperations on types (ex. true >= false)
+ *  - add optional types to var's
  *  - improve recalling a variable (see todo in compiler.c)
- * */
+ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -292,6 +292,19 @@ void print_statement(Statement_t* stmt) {
             print_expression(while_s->condition);
             printf(" ");
             print_statement(while_s->body);
+            printf(")");
+            break;
+        }
+        case StatementType_For: {
+            ST_For_t* for_s = stmt->value.for_s;
+            printf("(For ");
+            print_statement(for_s->init);
+            printf(" ");
+            print_expression(for_s->condition);
+            printf(" ");
+            print_statement(for_s->incr);
+            printf(" ");
+            print_statement(for_s->body);
             printf(")");
             break;
         }

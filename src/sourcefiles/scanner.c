@@ -71,6 +71,7 @@ ScanResult_t scan(String_t input) {
                     while (input.chars[i] != '\n') {
                         i++;
                     }
+                    line++;
                 } else {
                     push_token(&tokens, &t_len, &t_capacity, new_token(TokenType_Slash, line, NULL));
                 }
