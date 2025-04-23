@@ -92,7 +92,12 @@ int compile_literal_indirect(Compiler_t* compiler, EV_Literal_t* literal) {
         case TokenType_Identifier: {
             // TODO: fix this, this is inefficient af
             HM_GetResult_t arg = environement_get(&compiler->env, *literal->value->s);
-            if (arg.had_error) { return 1; }
+            if (arg.had_error) { 
+                printf("error: variable '");
+                string_print(*literal->value->s);
+                printf("' not found\n");
+                return 1;
+            }
             push_size_t(compiler, arg.value);
             break;
         }

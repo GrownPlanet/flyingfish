@@ -420,7 +420,7 @@ Statement_t* parse_assignment(Parser_t* parser) {
 
     token = parser->tokens[parser->index];
     if (token.type != TokenType_Equal) {
-        printf("error: expected `=` in variable assignment\n");
+        printf("error: expected `=` in variable reassignment on line %" PRIu "\n", token.line);
         return NULL;
     }
     advance(parser);
