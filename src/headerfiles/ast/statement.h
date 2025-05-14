@@ -17,9 +17,11 @@
  *  - while: while (expression) (statement)
  *  - if: if (expression) (statement) [else (statement)]?
  *  - block: {(statement)*}
- *  - print: print\((expression)\)
- *  - var: var (name) [: type]? = (expression)
+ *  - print: print\((expression)\);
+ *  - var: var (name) [: type]? = (expression);
+ *  - assignment: (name) = (expression);
  *  - function: func (name)\([(varname) (type)]*\) (statement)
+ *  - function call: (identifier)\((expression)*\);
  */
 
 typedef struct ST_Print_t ST_Print_t;
@@ -30,6 +32,7 @@ typedef struct ST_If_t ST_If_t;
 typedef struct ST_While_t ST_While_t;
 typedef struct ST_For_t ST_For_t;
 typedef struct ST_Function_t ST_Function_t;
+typedef struct ST_FunctionCall_t ST_FunctionCall_t;
 
 typedef enum {
     StatementType_Print,
@@ -40,6 +43,7 @@ typedef enum {
     StatementType_While,
     StatementType_For,
     StatementType_Function,
+    StatementType_FunctionCall,
 } StatementType_t;
 
 typedef union {
@@ -51,6 +55,7 @@ typedef union {
     ST_While_t* while_s;
     ST_For_t* for_s;
     ST_Function_t* function;
+    ST_FunctionCall_t* function_call;
 } StatementValue_t;
 
 typedef struct {
@@ -107,6 +112,12 @@ struct ST_Function_t {
     String_t* name;
     ST_FunctionInput_t input;
     Statement_t* body;
+};
+
+struct ST_FunctionCall_t {
+    String_t* name;
+    Expression_t* input;
+    size_t len;
 };
 
 void free_statement(Statement_t* expr);

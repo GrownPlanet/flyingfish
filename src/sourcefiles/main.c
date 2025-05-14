@@ -319,5 +319,16 @@ void print_statement(Statement_t* stmt) {
             printf(")");
             break;
         }
+        case StatementType_FunctionCall: {
+            ST_FunctionCall_t* funcc = stmt->value.function_call;
+            printf("(FuncCall ");
+            string_print(*funcc->name);
+            printf(" (");
+            for (size_t i = 0; i < funcc->len; i++) {
+                print_expression(&funcc->input[i]);
+            }
+            printf("))");
+            break;
+        }
     }
 }

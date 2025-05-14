@@ -2,4 +2,5 @@ func hello(string name) {
     print("Hello");
     print(name);
 }
-print("hey :)");
+
+hello("timo");

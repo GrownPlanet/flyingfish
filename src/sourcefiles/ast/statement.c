@@ -34,6 +34,10 @@ void free_statement(Statement_t* stmt) {
             free_statement(stmt->value.for_s->incr);
             free_statement(stmt->value.for_s->body);
             break;
+        // case StatementType_Function:
+        //     break;
+        // case StatementType_FunctionCall:
+        //     break;
         default: printf("internal compiler error: unknown statement type: %d\n", stmt->type); break;
     }
 }

@@ -442,7 +442,6 @@ Statement_t* parse_var(Parser_t* parser) {
 Statement_t* parse_assignment(Parser_t* parser) {
     Statement_t* stmt = (Statement_t*)malloc(sizeof(Statement_t));
     if (stmt == NULL) { printf("malloc failed!\n"); return NULL; }
-
     stmt->type = StatementType_Assignment;
 
     ST_Assignment_t* assig = (ST_Assignment_t*)malloc(sizeof(ST_Assignment_t));
@@ -706,7 +705,6 @@ Statement_t* parse_func_def(Parser_t* parser) {
             input.types = realloc(input.types, capacity);
             if (input.types == NULL) { printf("malloc failed!\n"); return NULL; }
         }
-
     }
     // )
     advance(parser);
@@ -731,6 +729,87 @@ Statement_t* parse_func_def(Parser_t* parser) {
     return stmt;
 }
 
+Statement_t* parse_func_call(Parser_t* parser) {
+    ST_FunctionCall_t* funcc = (ST_FunctionCall_t*)malloc(sizeof(ST_FunctionCall_t));
+    if (funcc == NULL) { printf("malloc failed!\n"); return NULL; }
+
+    Token_t token = parser->tokens[parser->index];
+    funcc->name = token.literal->s;
+    advance(parser);
+
+    token = parser->tokens[parser->index];
+    if (token.type != TokenType_LeftParen) {
+        printf("error: expected `(` in a function call on line %" PRIu "\n", token.line);
+        return NULL;
+    }
+    advance(parser);
+
+    funcc->len = 0;
+    size_t capacity = 2;
+
+    funcc->input = (Expression_t*)malloc(sizeof(Expression_t) * capacity);
+    if (funcc->input == NULL) { printf("malloc failed!\n"); return NULL; }
+
+    token = parser->tokens[parser->index];
+    while (token.type != TokenType_RightParen) {
+        Expression_t* res = parse_expr(parser);
+        funcc->input[funcc->len] = *res;
+        free(res);
+
+        funcc->len++;
+        if (funcc->len >= capacity) {
+            capacity *= 2;
+            funcc->input = realloc(funcc->input, capacity);
+            if (funcc->input == NULL) { printf("malloc failed!\n"); return NULL; }
+        }
+
+        token = parser->tokens[parser->index];
+    }
+    funcc->input = realloc(funcc->input, funcc->len);
+    if (funcc->input == NULL) { printf("malloc failed!\n"); return NULL; }
+    advance(parser);
+
+    token = parser->tokens[parser->index];
+    if (token.type != TokenType_Semicolon) {
+        printf("error: expected semicolon after assignment on line %" PRIu "\n", token.line);
+        return NULL;
+    }
+    advance(parser);
+
+    Statement_t* stmt = (Statement_t*)malloc(sizeof(Statement_t));
+    if (stmt == NULL) { printf("malloc failed!\n"); return NULL; }
+    stmt->type = StatementType_FunctionCall;
+    StatementValue_t v;
+    v.function_call = funcc;
+    stmt->value = v;
+
+    return stmt;
+}
+
+Statement_t* parse_identifier(Parser_t* parser) {
+    if (parser->index + 1 >= parser->len) {
+        printf(
+            "expected either a `=` or a `(` after a identifier on line %" PRIu "\n",
+            parser->tokens[parser->index].line
+        );
+        return NULL;
+    }
+
+    TokenType_t tokentype = parser->tokens[parser->index + 1].type;
+    switch (tokentype) {
+        case TokenType_Equal: 
+            return parse_assignment(parser);
+        case TokenType_LeftParen:
+            return parse_func_call(parser);
+        default:
+            printf(
+                "expected either a `=` or a `(` after a identifier on line %" PRIu "\n",
+                parser->tokens[parser->index].line
+            );
+            return NULL;
+    }
+}
+
 Statement_t* parse_statement(Parser_t* parser) {
     Token_t token = parser->tokens[parser->index];
     Statement_t* stmt;
@@ -738,7 +817,7 @@ Statement_t* parse_statement(Parser_t* parser) {
     switch (token.type) {
         case TokenType_Print: stmt = parse_print(parser); break;
         case TokenType_Var: stmt = parse_var(parser); break;
-        case TokenType_Identifier: stmt = parse_assignment(parser); break;
+        case TokenType_Identifier: stmt = parse_identifier(parser); break;
         case TokenType_LeftBrace: stmt = parse_block(parser); break;
         case TokenType_If: stmt = parse_if(parser); break;
         case TokenType_While: stmt = parse_while(parser); break;
