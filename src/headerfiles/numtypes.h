@@ -31,7 +31,7 @@
 
     #define ARCH "x32"
 #else
-    #define ARCH "unknown"
+    #error "unkown compilation target"
 #endif
 
 #endif // NUMTYPES_H

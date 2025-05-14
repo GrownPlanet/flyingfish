@@ -19,6 +19,7 @@
  *  - block: {(statement)*}
  *  - print: print\((expression)\)
  *  - var: var (name) [: type]? = (expression)
+ *  - function: func (name)\([(varname) (type)]*\) (statement)
  */
 
 typedef struct ST_Print_t ST_Print_t;
@@ -28,6 +29,7 @@ typedef struct ST_Block_t ST_Block_t;
 typedef struct ST_If_t ST_If_t;
 typedef struct ST_While_t ST_While_t;
 typedef struct ST_For_t ST_For_t;
+typedef struct ST_Function_t ST_Function_t;
 
 typedef enum {
     StatementType_Print,
@@ -37,6 +39,7 @@ typedef enum {
     StatementType_If,
     StatementType_While,
     StatementType_For,
+    StatementType_Function,
 } StatementType_t;
 
 typedef union {
@@ -47,6 +50,7 @@ typedef union {
     ST_If_t* if_s;
     ST_While_t* while_s;
     ST_For_t* for_s;
+    ST_Function_t* function;
 } StatementValue_t;
 
 typedef struct {
@@ -90,6 +94,18 @@ struct ST_For_t {
     Statement_t* init;
     Expression_t* condition;
     Statement_t* incr;
+    Statement_t* body;
+};
+
+typedef struct {
+    size_t len;
+    String_t* names;
+    TokenType_t* types;
+} ST_FunctionInput_t;
+
+struct ST_Function_t {
+    String_t* name;
+    ST_FunctionInput_t input;
     Statement_t* body;
 };
 

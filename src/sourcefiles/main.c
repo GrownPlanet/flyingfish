@@ -30,11 +30,6 @@ int compile_program(char* filename, char* output_filename);
 int run_program(char* filename);
 
 int main(int argc, char* argv[]) {
-    if (strcmp(ARCH, "unknown") == 0) {
-        printf("error: unknown architecture\n");
-        return 1;
-    }
-
     if (argc != 3) {
         print_help_menu(argv[0]);
         return 1;
@@ -43,13 +38,13 @@ int main(int argc, char* argv[]) {
     if (strcmp(argv[1], "compile") == 0 || strcmp(argv[1], "c") == 0) {
         return compile_program(argv[2], "out.cff");
     } 
-    else if (strcmp(argv[1], "run") == 0 || strcmp(argv[1], "r") == 0) {
+
+    if (strcmp(argv[1], "run") == 0 || strcmp(argv[1], "r") == 0) {
         return run_program(argv[2]);
     } 
-    else {
-        print_help_menu(argv[0]);
-        return 1;
-    }
+
+    print_help_menu(argv[0]);
+    return 1;
 }
 
 int compile_program(char* filename, char* output_filename) {
@@ -305,6 +300,23 @@ void print_statement(Statement_t* stmt) {
             print_statement(for_s->incr);
             printf(" ");
             print_statement(for_s->body);
+            printf(")");
+            break;
+        }
+        case StatementType_Function: {
+            ST_Function_t* func = stmt->value.function;
+            printf("(Func ");
+            string_print(*func->name);
+            printf(" (");
+            for (size_t i = 0; i < func->input.len; i++) {
+                printf(" (");
+                print_token_type(func->input.types[i]);
+                printf(" ");
+                string_print(func->input.names[i]);
+                printf(")");
+            }
+            printf(") ");
+            print_statement(func->body);
             printf(")");
             break;
         }

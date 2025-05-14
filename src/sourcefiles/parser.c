@@ -493,10 +493,7 @@ Statement_t* parse_block(Parser_t* parser) {
     block->len = len;
 
     Statement_t* stmt = (Statement_t*)malloc(sizeof(Statement_t));
-    if (stmt == NULL) {
-        printf("malloc failed!\n");
-        return NULL;
-    }
+    if (stmt == NULL) { printf("malloc failed!\n"); return NULL; }
     stmt->type = StatementType_Block;
     StatementValue_t v;
     v.block = block;
@@ -601,6 +598,105 @@ Statement_t* parse_for(Parser_t* parser) {
     return stmt;
 }
 
+Statement_t* parse_func_def(Parser_t* parser) {
+    // func
+    advance(parser);
+
+    ST_Function_t* func = (ST_Function_t*)malloc(sizeof(ST_Function_t));
+    if (func == NULL) { printf("malloc failed!\n"); return NULL; }
+
+    // name
+    Token_t token = parser->tokens[parser->index];
+    if (token.type != TokenType_Identifier) {
+        printf("error: expected identifier after `func` on line %" PRIu "\n", token.line);
+        return NULL;
+    }
+    func->name = token.literal->s;
+    advance(parser);
+
+    // (
+    token = parser->tokens[parser->index];
+    if (token.type != TokenType_LeftParen) {
+        print_token_type(token.type); printf("\n");
+        printf("error: expected `(` after function name on line %" PRIu "\n", token.line);
+        return NULL;
+    }
+    advance(parser);
+
+    // input
+    ST_FunctionInput_t input;
+    input.len = 0;
+    size_t capacity = 2;
+
+    input.names = (String_t*)malloc(sizeof(String_t) * capacity);
+    if (input.names == NULL) { printf("malloc failed!\n"); return NULL; }
+    input.types = (TokenType_t*)malloc(sizeof(TokenType_t) * capacity);
+    if (input.types == NULL) { printf("malloc failed!\n"); return NULL; }
+
+    while (token.type != TokenType_RightParen) {
+        token = parser->tokens[parser->index];
+        if (token.type != TokenType_StringT
+            && token.type != TokenType_IntT
+            && token.type != TokenType_FloatT
+            && token.type != TokenType_CharT
+            && token.type != TokenType_BoolT) {
+            printf("error: expected type in function arguments on line %" PRIu ", ", token.line);
+            printf("got ");
+            print_token_type(token.type);
+            printf(" instead\n");
+            return NULL;
+        }
+        input.types[input.len] = token.type;
+        advance(parser);
+
+        token = parser->tokens[parser->index];
+        if (token.type != TokenType_Identifier) {
+            printf("error: expected identifier in function arguments on line %" PRIu ", ", token.line);
+            printf("got ");
+            print_token_type(token.type);
+            printf(" instead\n");
+            return NULL;
+        }
+        input.names[input.len] = *token.literal->s;
+        advance(parser);
+
+        hashmap_insert(&parser->hashmap, input.names[input.len], -1, input.types[input.len]);
+
+        token = parser->tokens[parser->index];
+
+        input.len++;
+        if (input.len >= capacity) {
+            capacity *= 2;
+            input.names = realloc(input.names, capacity);
+            if (input.names == NULL) { printf("malloc failed!\n"); return NULL; }
+            input.types = realloc(input.types, capacity);
+            if (input.types == NULL) { printf("malloc failed!\n"); return NULL; }
+        }
+
+    }
+    // )
+    advance(parser);
+
+    input.names = realloc(input.names, input.len);
+    if (input.names == NULL) { printf("malloc failed!\n"); return NULL; }
+    input.types = realloc(input.types, input.len);
+    if (input.types == NULL) { printf("malloc failed!\n"); return NULL; }
+
+    func->input = input;
+
+    // body
+    func->body = parse_statement(parser);
+
+    Statement_t* stmt = (Statement_t*)malloc(sizeof(Statement_t));
+    if (stmt == NULL) { printf("malloc failed!\n"); return NULL; }
+    stmt->type = StatementType_Function;
+    StatementValue_t v;
+    v.function = func;
+    stmt->value = v;
+
+    return stmt;
+}
+
 Statement_t* parse_statement(Parser_t* parser) {
     Token_t token = parser->tokens[parser->index];
     Statement_t* stmt;
@@ -613,6 +709,7 @@ Statement_t* parse_statement(Parser_t* parser) {
         case TokenType_If: stmt = parse_if(parser); break;
         case TokenType_While: stmt = parse_while(parser); break;
         case TokenType_For: stmt = parse_for(parser); break;
+        case TokenType_Func: stmt = parse_func_def(parser); break;
         default: 
             printf("error: unexpected token in a statement on line %" PRIu ": ", token.line); 
             print_token_type(token.type);
