@@ -1,6 +1,5 @@
 /*
  * TODO: 
- *  - add earlier errors for illigal opperations on types (ex. true >= false)
  *  - add optional types to var's
  *  - improve recalling a variable (see todo in compiler.c)
  */

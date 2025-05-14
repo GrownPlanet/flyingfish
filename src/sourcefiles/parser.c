@@ -250,7 +250,17 @@ Expression_t* parse_factor(Parser_t* parser) {
     types[0] = TokenType_Star;
     types[1] = TokenType_Slash;
 
-    return parse_binary(parser, types, types_len, false, 0, parse_unary);
+    Expression_t* res = parse_binary(parser, types, types_len, false, 0, parse_unary);
+
+    if (res->type == ExpressionType_Binary) {
+        TokenType_t type = res->value.binary->out_type;
+        if (type != TokenType_IntV && type != TokenType_FloatV) {
+            printf("error: illigal types in factor on line %" PRIu "\n", res->line);
+            return NULL;
+        }
+    }
+
+    return res;
 }
 
 Expression_t* parse_term(Parser_t* parser) {
@@ -263,7 +273,18 @@ Expression_t* parse_term(Parser_t* parser) {
     }
     types[0] = TokenType_Plus;
     types[1] = TokenType_Minus;
-    return parse_binary(parser, types, types_len, false, 0, parse_factor);
+
+    Expression_t* res = parse_binary(parser, types, types_len, false, 0, parse_factor);
+
+    if (res->type == ExpressionType_Binary) {
+        TokenType_t type = res->value.binary->out_type;
+        if (type != TokenType_IntV && type != TokenType_FloatV) {
+            printf("error: illigal types in term on line %" PRIu "\n", res->line);
+            return NULL;
+        }
+    }
+
+    return res;
 }
 
 Expression_t* parse_comparison(Parser_t* parser) {
@@ -278,7 +299,18 @@ Expression_t* parse_comparison(Parser_t* parser) {
     types[1] = TokenType_GreaterEqual;
     types[2] = TokenType_Lesser;
     types[3] = TokenType_LesserEqual;
-    return parse_binary(parser, types, types_len, true, TokenType_BoolV, parse_term);
+
+    Expression_t* res = parse_binary(parser, types, types_len, true, TokenType_BoolV, parse_term);
+
+    if (res->type == ExpressionType_Binary) {
+        TokenType_t type = res->value.binary->out_type;
+        if (type != TokenType_IntV && type != TokenType_FloatV) {
+            printf("error: illigal types in comparison on line %" PRIu "\n", res->line);
+            return NULL;
+        }
+    }
+
+    return res;
 }
 
 Expression_t* parse_eq_neq(Parser_t* parser) {
@@ -291,6 +323,7 @@ Expression_t* parse_eq_neq(Parser_t* parser) {
     }
     types[0] = TokenType_EqualEqual;
     types[1] = TokenType_BangEqual;
+
     return parse_binary(parser, types, types_len, true, TokenType_BoolV, parse_comparison);
 }
 
@@ -304,6 +337,7 @@ Expression_t* parse_expr(Parser_t* parser) {
     }
     types[0] = TokenType_And;
     types[1] = TokenType_Or;
+
     return parse_binary(parser, types, types_len, true, TokenType_BoolV, parse_eq_neq);
 }
 
