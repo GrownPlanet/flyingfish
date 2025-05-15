@@ -65,7 +65,6 @@ ScanResult_t scan(String_t input) {
                     push_token(&tokens, &t_len, &t_capacity, new_token(TokenType_Bang, line, NULL));
                 }
                 break;
-                break;
             case '/':
                 if (peek_char(input, i) == '/') {
                     while (input.chars[i] != '\n') {
@@ -191,8 +190,7 @@ ScanResult_t scan(String_t input) {
                 }
 
                 printf("error: unexpected character (= %c) on line %" PRIu "\n", ch, line);
-                had_error = true;
-                break;
+                return (ScanResult_t){ .tokens = NULL, .len = 0, .had_error = true };
         }
     }
 

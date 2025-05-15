@@ -709,9 +709,9 @@ Statement_t* parse_func_def(Parser_t* parser) {
     // )
     advance(parser);
 
-    input.names = realloc(input.names, input.len);
+    input.names = realloc(input.names, input.len * sizeof(String_t));
     if (input.names == NULL) { printf("malloc failed!\n"); return NULL; }
-    input.types = realloc(input.types, input.len);
+    input.types = realloc(input.types, input.len * sizeof(TokenType_t));
     if (input.types == NULL) { printf("malloc failed!\n"); return NULL; }
 
     func->input = input;
